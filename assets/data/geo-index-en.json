@@ -1,0 +1,44 @@
+{
+  "lang": "en",
+  "generated_at": "2026-06-01T00:00:00+00:00",
+  "default_view": "europe",
+  "shape_map": {
+    "GBR": "united-kingdom",
+    "ESP": "spain",
+    "ITA": "italy",
+    "GRC": "greece"
+  },
+  "places": {
+    "united-kingdom": {
+      "type": "country",
+      "label": "United Kingdom",
+      "post_count": 18,
+      "url": "https://www.mamanvoyage.com/en/tag/united-kingdom-en/",
+      "map_shape_id": "GBR",
+      "drilldown": false,
+      "top_posts": [
+        { "id": 501, "title": "A family trip to the Cotswolds", "url": "https://www.mamanvoyage.com/en/cotswolds-family/", "thumb": "" }
+      ]
+    },
+    "spain": {
+      "type": "country",
+      "label": "Spain",
+      "post_count": 13,
+      "url": "https://www.mamanvoyage.com/en/tag/spain/",
+      "map_shape_id": "ESP",
+      "drilldown": false,
+      "top_posts": [
+        { "id": 601, "title": "Barcelona with kids", "url": "https://www.mamanvoyage.com/en/barcelona-kids/", "thumb": "" }
+      ]
+    },
+    "italy": {
+      "type": "country",
+      "label": "Italy",
+      "post_count": 11,
+      "url": "https://www.mamanvoyage.com/en/tag/italy/",
+      "map_shape_id": "ITA",
+      "drilldown": false,
+      "top_posts": []
+    }
+  }
+}

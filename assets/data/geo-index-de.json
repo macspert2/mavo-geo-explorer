@@ -1,0 +1,42 @@
+{
+  "lang": "de",
+  "generated_at": "2026-06-01T00:00:00+00:00",
+  "default_view": "europe",
+  "shape_map": {
+    "ESP": "spanien",
+    "GBR": "vereinigtes-konigreich",
+    "ITA": "italien",
+    "GRC": "griechenland"
+  },
+  "places": {
+    "spanien": {
+      "type": "country",
+      "label": "Spanien",
+      "post_count": 11,
+      "url": "https://www.mamanvoyage.com/de/tag/spanien/",
+      "map_shape_id": "ESP",
+      "drilldown": false,
+      "top_posts": [
+        { "id": 701, "title": "Barcelona mit Kindern", "url": "https://www.mamanvoyage.com/de/barcelona-kinder/", "thumb": "" }
+      ]
+    },
+    "vereinigtes-konigreich": {
+      "type": "country",
+      "label": "Vereinigtes Königreich",
+      "post_count": 11,
+      "url": "https://www.mamanvoyage.com/de/tag/vereinigtes-konigreich-de/",
+      "map_shape_id": "GBR",
+      "drilldown": false,
+      "top_posts": []
+    },
+    "italien": {
+      "type": "country",
+      "label": "Italien",
+      "post_count": 10,
+      "url": "https://www.mamanvoyage.com/de/tag/italien/",
+      "map_shape_id": "ITA",
+      "drilldown": false,
+      "top_posts": []
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "lang": "fr",
+  "generated_at": "2026-06-01T00:00:00+00:00",
+  "default_view": "europe",
+  "shape_map": {
+    "FRA": "france",
+    "ITA": "italie",
+    "ESP": "espagne",
+    "GBR": "royaume-uni",
+    "PRT": "portugal",
+    "GRC": "grece"
+  },
+  "places": {
+    "france": {
+      "type": "country",
+      "label": "France",
+      "post_count": 145,
+      "url": "https://www.mamanvoyage.com/tag/france/",
+      "map_shape_id": "FRA",
+      "drilldown": false,
+      "top_posts": [
+        { "id": 101, "title": "France en famille : nos meilleures idées", "url": "https://www.mamanvoyage.com/france-en-famille/", "thumb": "" },
+        { "id": 102, "title": "Bretagne avec des enfants", "url": "https://www.mamanvoyage.com/bretagne-enfants/", "thumb": "" },
+        { "id": 103, "title": "Provence en famille", "url": "https://www.mamanvoyage.com/provence-famille/", "thumb": "" }
+      ]
+    },
+    "italie": {
+      "type": "country",
+      "label": "Italie",
+      "post_count": 38,
+      "url": "https://www.mamanvoyage.com/tag/italie/",
+      "map_shape_id": "ITA",
+      "drilldown": false,
+      "top_posts": [
+        { "id": 201, "title": "Rome en famille", "url": "https://www.mamanvoyage.com/rome-famille/", "thumb": "" },
+        { "id": 202, "title": "Toscane avec des enfants", "url": "https://www.mamanvoyage.com/toscane-enfants/", "thumb": "" }
+      ]
+    },
+    "espagne": {
+      "type": "country",
+      "label": "Espagne",
+      "post_count": 22,
+      "url": "https://www.mamanvoyage.com/tag/espagne/",
+      "map_shape_id": "ESP",
+      "drilldown": false,
+      "top_posts": [
+        { "id": 301, "title": "Barcelone en famille", "url": "https://www.mamanvoyage.com/barcelone-famille/", "thumb": "" }
+      ]
+    },
+    "royaume-uni": {
+      "type": "country",
+      "label": "Royaume-Uni",
+      "post_count": 17,
+      "url": "https://www.mamanvoyage.com/tag/royaume-uni/",
+      "map_shape_id": "GBR",
+      "drilldown": false,
+      "top_posts": [
+        { "id": 401, "title": "Londres en famille", "url": "https://www.mamanvoyage.com/londres-famille/", "thumb": "" }
+      ]
+    }
+  }
+}
