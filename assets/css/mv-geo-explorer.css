@@ -86,6 +86,22 @@
 	font-size: 0.9375rem;
 }
 
+/* The [hidden] attribute selector needs to out-specificity the class rule
+   above (its `display: flex` otherwise wins over the browser's default
+   `[hidden] { display: none }`, since author CSS always beats the UA
+   stylesheet at equal specificity) — without this, setting `.hidden = true`
+   in JS leaves the overlay visibly in place AND, since it's positioned
+   absolutely over the whole map, silently swallowing every hover/click
+   meant for the SVG underneath. pointer-events: none is extra insurance
+   against the same class of bug. */
+.mv-geo-explorer__loading {
+	pointer-events: none;
+}
+
+.mv-geo-explorer__loading[hidden] {
+	display: none;
+}
+
 .mv-geo-explorer__error {
 	position: static;
 	margin: 0.5rem 0 0;
