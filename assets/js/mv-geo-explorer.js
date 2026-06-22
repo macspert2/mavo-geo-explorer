@@ -252,10 +252,12 @@
 				const link = document.createElement('a');
 				link.href = place.url;
 				link.textContent = place.label;
+				link.dataset.slug = place.slug;
 				link.addEventListener('mouseenter', () => this.setHover(place.slug));
 				link.addEventListener('mouseleave', () => this.clearHover());
 				link.addEventListener('focus', () => this.setHover(place.slug));
 				link.addEventListener('blur', () => this.clearHover());
+				link.addEventListener('click', (event) => this.handleListLinkClick(place.slug, event));
 
 				li.appendChild(link);
 				if (this.config.showCounts) {
@@ -263,12 +265,53 @@
 				}
 				this.listItemsEl.appendChild(li);
 			});
+
+			this.updateListSelection();
+		}
+
+		/**
+		 * Mirrors the map shapes' click behaviour (Section: selectOrDrill) —
+		 * first click previews (shows the panel, with its own explicit "View
+		 * articles" button as the discoverable way to go further), a second
+		 * click on the *same*, already-selected link lets the real navigation
+		 * through instead of intercepting it. No JS at all (or a crawler that
+		 * doesn't run it) just sees a normal `<a href>` and follows it
+		 * directly — nothing here depends on JS to reach the tag page.
+		 */
+		handleListLinkClick(slug, event) {
+			if (slug === this.selected) {
+				return;
+			}
+			event.preventDefault();
+			this.selectPlace(slug);
+		}
+
+		/**
+		 * Keeps the list in sync with whichever place is selected (via the
+		 * map *or* the list itself) without rebuilding the list — rebuilding
+		 * on every selection would drop keyboard focus right after the user
+		 * activates a link.
+		 */
+		updateListSelection() {
+			if (!this.listItemsEl) {
+				return;
+			}
+			this.listItemsEl.querySelectorAll('a[data-slug]').forEach((link) => {
+				const isSelected = link.dataset.slug === this.selected;
+				link.classList.toggle('mv-geo-explorer__list-link--selected', isSelected);
+				if (isSelected) {
+					link.setAttribute('aria-current', 'true');
+				} else {
+					link.removeAttribute('aria-current');
+				}
+			});
 		}
 
 		selectPlace(slug) {
 			this.selected = slug;
 			this.updateShapeClasses();
 			this.renderPanel(slug);
+			this.updateListSelection();
 		}
 
 		/**

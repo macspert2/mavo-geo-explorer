@@ -317,6 +317,20 @@
 	text-decoration: underline;
 }
 
+/* A first click previews (see the panel's own "view articles" button for
+   the explicit way to go further); this marks which link that was, and
+   doubles as a hint that activating it again behaves differently — a
+   second click on this same, now-bold-and-arrowed link is what actually
+   navigates to the tag page. */
+.mv-geo-explorer__list-link--selected {
+	font-weight: 700;
+	color: var(--mv-geo-land-selected);
+}
+
+.mv-geo-explorer__list-link--selected::after {
+	content: ' →';
+}
+
 .mv-geo-explorer__list-count {
 	color: var(--mv-geo-muted);
 	font-size: 0.875rem;
