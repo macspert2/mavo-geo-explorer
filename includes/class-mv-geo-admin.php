@@ -72,7 +72,7 @@ class MV_Geo_Admin {
             ['lang', 'current, fr, en, de', 'current', __('Which language\'s index/UI strings to show. "current" follows Polylang\'s current language.', 'mv-geo-explorer')],
             ['default_view', 'europe', 'europe', __('Initial map view. "World" is still reachable from the map itself via the "View the whole world" link — there is no attribute yet to start a shortcode instance zoomed out to World.', 'mv-geo-explorer')],
             ['show_list', '1, 0', '1', __('Show the accessible destination list below the map.', 'mv-geo-explorer')],
-            ['show_counts', '1, 0', '1', __('Show the post count next to each destination in that list.', 'mv-geo-explorer')],
+            ['show_counts', '1, 0', '1', __('Show the post count: next to each destination in the list, in the side panel when a place is selected, and in the hover tooltip.', 'mv-geo-explorer')],
             ['show_posts', '1, 0', '1', __('Show the "top articles" list in the side panel when a place is selected.', 'mv-geo-explorer')],
             ['max_posts', '1–10', '3', __('How many top articles to show per place in the side panel.', 'mv-geo-explorer')],
             ['theme', 'default, minimal', 'default', __('"minimal" drops the panel/map background and border for a more stripped-down look.', 'mv-geo-explorer')],

@@ -145,7 +145,9 @@
 			}
 
 			this.panelEl.appendChild(this.el('h2', 'mv-geo-explorer__panel-title', place.label));
-			this.panelEl.appendChild(this.el('p', 'mv-geo-explorer__panel-count', this.countLabel(place.post_count)));
+			if (this.config.showCounts) {
+				this.panelEl.appendChild(this.el('p', 'mv-geo-explorer__panel-count', this.countLabel(place.post_count)));
+			}
 
 			if (place.drilldown && this.index.drilldowns && this.index.drilldowns[slug]) {
 				const drillBtn = document.createElement('button');
@@ -484,7 +486,7 @@
 				this.tooltipEl.className = 'mv-geo-explorer__tooltip';
 				this.mapWrap.appendChild(this.tooltipEl);
 			}
-			this.tooltipEl.textContent = place.label + ' — ' + this.countLabel(place.post_count);
+			this.tooltipEl.textContent = this.config.showCounts ? place.label + ' — ' + this.countLabel(place.post_count) : place.label;
 			this.tooltipEl.hidden = false;
 			this.moveTooltip(event);
 		}
