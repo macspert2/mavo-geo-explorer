@@ -19,9 +19,13 @@
 			this.hovered = null;
 			this.tooltipEl = null;
 
-			// Drill-down state (Europe ⇄ a single country's regions, e.g. France).
+			// Drill-down state (Europe/World ⇄ a single country's regions, e.g. France).
 			this.drillSlug = null;
 			this.drillGeoCache = {};
+
+			// Zoom state: 'europe' (default) or 'world'.
+			this.baseView = 'europe';
+			this.worldGeojson = null;
 
 			this._onResize = this.debounce(() => this.render(), 150);
 		}
@@ -36,6 +40,7 @@
 
 			this.hideLoading();
 			this.renderPanel(null);
+			this.renderBreadcrumb();
 			if (this.config.showList) {
 				this.renderList();
 			}
@@ -66,7 +71,14 @@
 		}
 
 		render() {
-			const featureCollection = this.drillSlug ? this.drillGeoCache[this.drillSlug] : this.geojson;
+			let featureCollection;
+			if (this.drillSlug) {
+				featureCollection = this.drillGeoCache[this.drillSlug];
+			} else if (this.baseView === 'world') {
+				featureCollection = this.worldGeojson;
+			} else {
+				featureCollection = this.geojson;
+			}
 			if (featureCollection) {
 				this.renderMap(featureCollection);
 			}
@@ -187,14 +199,33 @@
 			}
 
 			const drillSlug = this.drillSlug;
+			const self = this;
 			const places = Object.keys(this.index.places)
 				.map((slug) => Object.assign({ slug }, this.index.places[slug]))
-				.filter((place) => place.post_count > 0 && (drillSlug ? place.parent === drillSlug : !place.parent))
+				.filter((place) => {
+					if (place.post_count <= 0) {
+						return false;
+					}
+					if (drillSlug) {
+						return place.parent === drillSlug;
+					}
+					if (place.parent) {
+						return false; // a region/child place, not relevant at a top-level view
+					}
+					if (self.baseView === 'world') {
+						return true; // full worldwide country list
+					}
+					// Default Europe view: only countries actually shown on the Europe map —
+					// keeps countries-with-posts from other continents out of this list
+					// (they belong in the World list instead).
+					return Object.prototype.hasOwnProperty.call(self.index.shape_map, place.map_shape_id);
+				})
 				.sort((a, b) => b.post_count - a.post_count);
 
 			if (this.listHeadingEl) {
 				const current = drillSlug && this.placeFor(drillSlug);
-				this.listHeadingEl.textContent = current ? current.label : this.config.strings.list_heading;
+				const heading = current ? current.label : this.baseView === 'world' ? this.config.strings.list_heading_world : this.config.strings.list_heading;
+				this.listHeadingEl.textContent = heading;
 			}
 
 			this.listItemsEl.innerHTML = '';
@@ -283,6 +314,37 @@
 			this.afterViewChange();
 		}
 
+		/**
+		 * Zooms out from the default Europe view to a worldwide map. Lazily
+		 * fetches+caches world-countries.simple.geojson on first use, same
+		 * pattern as drillInto() for a country's regions.
+		 */
+		async zoomToWorld() {
+			if (this.baseView === 'world') {
+				return;
+			}
+			if (!this.worldGeojson) {
+				try {
+					const res = await fetch(this.config.worldGeoUrl, { credentials: 'omit' });
+					if (!res.ok) {
+						throw new Error('mv-geo-explorer: failed to load world geojson (' + res.status + ')');
+					}
+					this.worldGeojson = await res.json();
+				} catch (err) {
+					return;
+				}
+			}
+			this.baseView = 'world';
+			this.drillSlug = null;
+			this.afterViewChange();
+		}
+
+		zoomToEurope() {
+			this.baseView = 'europe';
+			this.drillSlug = null;
+			this.afterViewChange();
+		}
+
 		afterViewChange() {
 			this.selected = null;
 			this.hovered = null;
@@ -295,30 +357,45 @@
 			}
 		}
 
+		/**
+		 * Three states, always one of them visible (never fully hidden — the
+		 * default Europe state shows a forward "view world" link so zooming
+		 * out is discoverable, not just zooming back in once you've used it):
+		 *   1. Drilled into a country's regions: back-to-(europe|world) + country name.
+		 *   2. Zoomed out to World (no drill): back-to-Europe only.
+		 *   3. Default Europe (no drill): forward "view world" link only.
+		 */
 		renderBreadcrumb() {
 			if (!this.breadcrumbEl) {
 				return;
 			}
 			this.breadcrumbEl.innerHTML = '';
+			const strings = this.config.strings;
 
-			if (!this.drillSlug) {
-				this.breadcrumbEl.hidden = true;
-				return;
-			}
+			if (this.drillSlug) {
+				const backLabel = this.baseView === 'world' ? strings.back_to_world : strings.back_to_europe;
+				this.breadcrumbEl.appendChild(this.makeBreadcrumbButton(backLabel, 'mv-geo-explorer__breadcrumb-back', () => this.drillBack()));
 
-			const back = document.createElement('button');
-			back.type = 'button';
-			back.className = 'mv-geo-explorer__breadcrumb-back';
-			back.textContent = this.config.strings.back_to_europe;
-			back.addEventListener('click', () => this.drillBack());
-			this.breadcrumbEl.appendChild(back);
-
-			const place = this.placeFor(this.drillSlug);
-			if (place) {
-				this.breadcrumbEl.appendChild(this.el('span', 'mv-geo-explorer__breadcrumb-current', place.label));
+				const place = this.placeFor(this.drillSlug);
+				if (place) {
+					this.breadcrumbEl.appendChild(this.el('span', 'mv-geo-explorer__breadcrumb-current', place.label));
+				}
+			} else if (this.baseView === 'world') {
+				this.breadcrumbEl.appendChild(this.makeBreadcrumbButton(strings.back_to_europe, 'mv-geo-explorer__breadcrumb-back', () => this.zoomToEurope()));
+			} else {
+				this.breadcrumbEl.appendChild(this.makeBreadcrumbButton(strings.view_world, 'mv-geo-explorer__breadcrumb-forward', () => this.zoomToWorld()));
 			}
 
 			this.breadcrumbEl.hidden = false;
+		}
+
+		makeBreadcrumbButton(label, className, onClick) {
+			const button = document.createElement('button');
+			button.type = 'button';
+			button.className = className;
+			button.textContent = label;
+			button.addEventListener('click', onClick);
+			return button;
 		}
 
 		// -------------------------------------------------------------

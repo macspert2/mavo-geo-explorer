@@ -10,20 +10,58 @@ defined('ABSPATH') || exit;
 /**
  * ISO 3166-1 alpha-2 (as stored in wp_geo_tagger_places.country_code and
  * Geo Mashup's country_code column) to alpha-3 (as used for the `id` of
- * each feature in europe-countries.simple.geojson). Europe-only for the MVP.
+ * each feature in both europe-countries.simple.geojson and
+ * world-countries.simple.geojson — worldwide coverage, needed now that the
+ * map supports zooming out to the World view, not just Europe). Sourced
+ * from the `world-countries` npm package (verified ISO data), with one
+ * deliberate override: 'xk' (Kosovo) maps to 'XKX' here to match the actual
+ * `A3` property in the geojson source data (@geo-maps/countries-land-10km),
+ * not 'UNK' which is what that npm package itself uses.
  */
 function mv_geo_explorer_alpha2_to_alpha3(): array {
     return [
-        'ad' => 'AND', 'al' => 'ALB', 'am' => 'ARM', 'at' => 'AUT', 'ax' => 'ALA',
-        'az' => 'AZE', 'ba' => 'BIH', 'be' => 'BEL', 'bg' => 'BGR', 'by' => 'BLR',
-        'ch' => 'CHE', 'cy' => 'CYP', 'cz' => 'CZE', 'de' => 'DEU', 'dk' => 'DNK',
-        'ee' => 'EST', 'es' => 'ESP', 'fi' => 'FIN', 'fo' => 'FRO', 'fr' => 'FRA',
-        'gb' => 'GBR', 'ge' => 'GEO', 'gr' => 'GRC', 'hr' => 'HRV', 'hu' => 'HUN',
-        'ie' => 'IRL', 'im' => 'IMN', 'is' => 'ISL', 'it' => 'ITA', 'li' => 'LIE',
-        'lt' => 'LTU', 'lu' => 'LUX', 'lv' => 'LVA', 'md' => 'MDA', 'me' => 'MNE',
-        'mk' => 'MKD', 'mt' => 'MLT', 'nl' => 'NLD', 'no' => 'NOR', 'pl' => 'POL',
-        'pt' => 'PRT', 'ro' => 'ROU', 'rs' => 'SRB', 'se' => 'SWE', 'si' => 'SVN',
-        'sk' => 'SVK', 'tr' => 'TUR', 'ua' => 'UKR', 'xk' => 'XKX',
+        'ad' => 'AND', 'ae' => 'ARE', 'af' => 'AFG', 'ag' => 'ATG', 'ai' => 'AIA', 'al' => 'ALB',
+        'am' => 'ARM', 'ao' => 'AGO', 'aq' => 'ATA', 'ar' => 'ARG', 'as' => 'ASM', 'at' => 'AUT',
+        'au' => 'AUS', 'aw' => 'ABW', 'ax' => 'ALA', 'az' => 'AZE', 'ba' => 'BIH', 'bb' => 'BRB',
+        'bd' => 'BGD', 'be' => 'BEL', 'bf' => 'BFA', 'bg' => 'BGR', 'bh' => 'BHR', 'bi' => 'BDI',
+        'bj' => 'BEN', 'bl' => 'BLM', 'bm' => 'BMU', 'bn' => 'BRN', 'bo' => 'BOL', 'bq' => 'BES',
+        'br' => 'BRA', 'bs' => 'BHS', 'bt' => 'BTN', 'bv' => 'BVT', 'bw' => 'BWA', 'by' => 'BLR',
+        'bz' => 'BLZ', 'ca' => 'CAN', 'cc' => 'CCK', 'cd' => 'COD', 'cf' => 'CAF', 'cg' => 'COG',
+        'ch' => 'CHE', 'ci' => 'CIV', 'ck' => 'COK', 'cl' => 'CHL', 'cm' => 'CMR', 'cn' => 'CHN',
+        'co' => 'COL', 'cr' => 'CRI', 'cu' => 'CUB', 'cv' => 'CPV', 'cw' => 'CUW', 'cx' => 'CXR',
+        'cy' => 'CYP', 'cz' => 'CZE', 'de' => 'DEU', 'dj' => 'DJI', 'dk' => 'DNK', 'dm' => 'DMA',
+        'do' => 'DOM', 'dz' => 'DZA', 'ec' => 'ECU', 'ee' => 'EST', 'eg' => 'EGY', 'eh' => 'ESH',
+        'er' => 'ERI', 'es' => 'ESP', 'et' => 'ETH', 'fi' => 'FIN', 'fj' => 'FJI', 'fk' => 'FLK',
+        'fm' => 'FSM', 'fo' => 'FRO', 'fr' => 'FRA', 'ga' => 'GAB', 'gb' => 'GBR', 'gd' => 'GRD',
+        'ge' => 'GEO', 'gf' => 'GUF', 'gg' => 'GGY', 'gh' => 'GHA', 'gi' => 'GIB', 'gl' => 'GRL',
+        'gm' => 'GMB', 'gn' => 'GIN', 'gp' => 'GLP', 'gq' => 'GNQ', 'gr' => 'GRC', 'gs' => 'SGS',
+        'gt' => 'GTM', 'gu' => 'GUM', 'gw' => 'GNB', 'gy' => 'GUY', 'hk' => 'HKG', 'hm' => 'HMD',
+        'hn' => 'HND', 'hr' => 'HRV', 'ht' => 'HTI', 'hu' => 'HUN', 'id' => 'IDN', 'ie' => 'IRL',
+        'il' => 'ISR', 'im' => 'IMN', 'in' => 'IND', 'io' => 'IOT', 'iq' => 'IRQ', 'ir' => 'IRN',
+        'is' => 'ISL', 'it' => 'ITA', 'je' => 'JEY', 'jm' => 'JAM', 'jo' => 'JOR', 'jp' => 'JPN',
+        'ke' => 'KEN', 'kg' => 'KGZ', 'kh' => 'KHM', 'ki' => 'KIR', 'km' => 'COM', 'kn' => 'KNA',
+        'kp' => 'PRK', 'kr' => 'KOR', 'kw' => 'KWT', 'ky' => 'CYM', 'kz' => 'KAZ', 'la' => 'LAO',
+        'lb' => 'LBN', 'lc' => 'LCA', 'li' => 'LIE', 'lk' => 'LKA', 'lr' => 'LBR', 'ls' => 'LSO',
+        'lt' => 'LTU', 'lu' => 'LUX', 'lv' => 'LVA', 'ly' => 'LBY', 'ma' => 'MAR', 'mc' => 'MCO',
+        'md' => 'MDA', 'me' => 'MNE', 'mf' => 'MAF', 'mg' => 'MDG', 'mh' => 'MHL', 'mk' => 'MKD',
+        'ml' => 'MLI', 'mm' => 'MMR', 'mn' => 'MNG', 'mo' => 'MAC', 'mp' => 'MNP', 'mq' => 'MTQ',
+        'mr' => 'MRT', 'ms' => 'MSR', 'mt' => 'MLT', 'mu' => 'MUS', 'mv' => 'MDV', 'mw' => 'MWI',
+        'mx' => 'MEX', 'my' => 'MYS', 'mz' => 'MOZ', 'na' => 'NAM', 'nc' => 'NCL', 'ne' => 'NER',
+        'nf' => 'NFK', 'ng' => 'NGA', 'ni' => 'NIC', 'nl' => 'NLD', 'no' => 'NOR', 'np' => 'NPL',
+        'nr' => 'NRU', 'nu' => 'NIU', 'nz' => 'NZL', 'om' => 'OMN', 'pa' => 'PAN', 'pe' => 'PER',
+        'pf' => 'PYF', 'pg' => 'PNG', 'ph' => 'PHL', 'pk' => 'PAK', 'pl' => 'POL', 'pm' => 'SPM',
+        'pn' => 'PCN', 'pr' => 'PRI', 'ps' => 'PSE', 'pt' => 'PRT', 'pw' => 'PLW', 'py' => 'PRY',
+        'qa' => 'QAT', 're' => 'REU', 'ro' => 'ROU', 'rs' => 'SRB', 'ru' => 'RUS', 'rw' => 'RWA',
+        'sa' => 'SAU', 'sb' => 'SLB', 'sc' => 'SYC', 'sd' => 'SDN', 'se' => 'SWE', 'sg' => 'SGP',
+        'sh' => 'SHN', 'si' => 'SVN', 'sj' => 'SJM', 'sk' => 'SVK', 'sl' => 'SLE', 'sm' => 'SMR',
+        'sn' => 'SEN', 'so' => 'SOM', 'sr' => 'SUR', 'ss' => 'SSD', 'st' => 'STP', 'sv' => 'SLV',
+        'sx' => 'SXM', 'sy' => 'SYR', 'sz' => 'SWZ', 'tc' => 'TCA', 'td' => 'TCD', 'tf' => 'ATF',
+        'tg' => 'TGO', 'th' => 'THA', 'tj' => 'TJK', 'tk' => 'TKL', 'tl' => 'TLS', 'tm' => 'TKM',
+        'tn' => 'TUN', 'to' => 'TON', 'tr' => 'TUR', 'tt' => 'TTO', 'tv' => 'TUV', 'tw' => 'TWN',
+        'tz' => 'TZA', 'ua' => 'UKR', 'ug' => 'UGA', 'um' => 'UMI', 'us' => 'USA', 'uy' => 'URY',
+        'uz' => 'UZB', 'va' => 'VAT', 'vc' => 'VCT', 've' => 'VEN', 'vg' => 'VGB', 'vi' => 'VIR',
+        'vn' => 'VNM', 'vu' => 'VUT', 'wf' => 'WLF', 'ws' => 'WSM', 'xk' => 'XKX', 'ye' => 'YEM',
+        'yt' => 'MYT', 'za' => 'ZAF', 'zm' => 'ZMB', 'zw' => 'ZWE',
     ];
 }
 
@@ -298,6 +336,9 @@ function mv_geo_explorer_ui_strings(): array {
             'map_aria_label'   => 'Carte interactive des destinations',
             'view_regions'     => 'Voir les régions',
             'back_to_europe'   => 'Retour à l’Europe',
+            'view_world'       => 'Voir le monde entier',
+            'back_to_world'    => 'Retour au monde',
+            'list_heading_world' => 'Toutes nos destinations dans le monde',
         ],
         'en' => [
             'loading'          => 'Loading the map…',
@@ -312,6 +353,9 @@ function mv_geo_explorer_ui_strings(): array {
             'map_aria_label'   => 'Interactive map of destinations',
             'view_regions'     => 'View regions',
             'back_to_europe'   => 'Back to Europe',
+            'view_world'       => 'View the whole world',
+            'back_to_world'    => 'Back to the world',
+            'list_heading_world' => 'All our destinations worldwide',
         ],
         'de' => [
             'loading'          => 'Karte wird geladen…',
@@ -326,6 +370,9 @@ function mv_geo_explorer_ui_strings(): array {
             'map_aria_label'   => 'Interaktive Karte der Reiseziele',
             'view_regions'     => 'Regionen ansehen',
             'back_to_europe'   => 'Zurück zu Europa',
+            'view_world'       => 'Die ganze Welt ansehen',
+            'back_to_world'    => 'Zurück zur Welt',
+            'list_heading_world' => 'Alle unsere Reiseziele weltweit',
         ],
     ];
 }

@@ -127,7 +127,16 @@
 	font-size: 0.875rem;
 }
 
-.mv-geo-explorer__breadcrumb-back {
+/* Same [hidden] specificity issue as .mv-geo-explorer__loading above — fixed
+   the same way. Matters more now that the breadcrumb is always shown with
+   real content (forward "view world" link included) rather than only ever
+   appearing for the country-drilldown case. */
+.mv-geo-explorer__breadcrumb[hidden] {
+	display: none;
+}
+
+.mv-geo-explorer__breadcrumb-back,
+.mv-geo-explorer__breadcrumb-forward {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.3em;
@@ -143,6 +152,11 @@
 
 .mv-geo-explorer__breadcrumb-back::before {
 	content: '←';
+	text-decoration: none;
+}
+
+.mv-geo-explorer__breadcrumb-forward::after {
+	content: '→';
 	text-decoration: none;
 }
 
