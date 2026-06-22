@@ -109,13 +109,13 @@
 				})
 				.on('click', function (event, d) {
 					if (self.hasPosts(d)) {
-						self.selectPlace(self.slugFor(d));
+						self.selectOrDrill(self.slugFor(d));
 					}
 				})
 				.on('keydown', function (event, d) {
 					if ((event.key === 'Enter' || event.key === ' ') && self.hasPosts(d)) {
 						event.preventDefault();
-						self.selectPlace(self.slugFor(d));
+						self.selectOrDrill(self.slugFor(d));
 					}
 				});
 		}
@@ -224,6 +224,22 @@
 			this.renderPanel(slug);
 		}
 
+		/**
+		 * Clicking/activating a shape that's already selected drills into it
+		 * directly (if it supports drilldown) instead of just re-selecting it —
+		 * a shortcut for the panel's "view regions" button.
+		 */
+		selectOrDrill(slug) {
+			if (slug && slug === this.selected) {
+				const place = this.placeFor(slug);
+				if (place && place.drilldown && this.index.drilldowns && this.index.drilldowns[slug]) {
+					this.drillInto(slug);
+					return;
+				}
+			}
+			this.selectPlace(slug);
+		}
+
 		clearHover() {
 			this.hovered = null;
 			this.hideTooltip();
@@ -327,12 +343,22 @@
 
 		shapeClass(d) {
 			const slug = this.slugFor(d);
+			const place = this.placeFor(slug);
+			const isHovered = Boolean(slug) && slug === this.hovered;
+			const isSelected = Boolean(slug) && slug === this.selected;
+
 			const classes = ['mv-geo-shape'];
 			classes.push(this.hasPosts(d) ? 'mv-geo-shape--has-posts' : 'mv-geo-shape--empty');
-			if (slug && slug === this.hovered) {
+			// Drilldown-capable countries get a slightly darker resting shade so
+			// they stand out as "explore further" — hover/selected still take
+			// over the fill entirely, same as any other country.
+			if (place && place.drilldown && !isHovered && !isSelected) {
+				classes.push('mv-geo-shape--drilldown');
+			}
+			if (isHovered) {
 				classes.push('mv-geo-shape--hover');
 			}
-			if (slug && slug === this.selected) {
+			if (isSelected) {
 				classes.push('mv-geo-shape--selected');
 			}
 			return classes.join(' ');

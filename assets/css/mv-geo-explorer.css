@@ -2,6 +2,7 @@
 	--mv-geo-bg: #fbf7f1;
 	--mv-geo-land-empty: #eee4d7;
 	--mv-geo-land-active: #d9eadf;
+	--mv-geo-land-active-drilldown: #b9d2c0;
 	--mv-geo-land-hover: #f2c8a2;
 	--mv-geo-land-selected: #e8a46f;
 	--mv-geo-border: #ffffff;
@@ -58,6 +59,15 @@
 .mv-geo-shape--has-posts {
 	fill: var(--mv-geo-land-active);
 	cursor: pointer;
+}
+
+/* Drilldown-capable countries (France/UK/Italy/Spain) get a slightly darker
+   resting shade so they read as "there's more to explore here" — only
+   applied to the resting state; hover/selected below still take over the
+   fill the same as any other country (source order matters: this rule
+   must come after --has-posts but before --hover/--selected). */
+.mv-geo-shape--drilldown {
+	fill: var(--mv-geo-land-active-drilldown);
 }
 
 .mv-geo-shape--hover {
