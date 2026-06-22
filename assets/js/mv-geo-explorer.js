@@ -84,6 +84,20 @@
 			}
 		}
 
+		/**
+		 * Zooms the projection to fit only the shapes that actually have
+		 * posts, instead of the whole collection — makes better use of the
+		 * available space when only a handful of countries (or regions) are
+		 * active, especially on EN/DE where far fewer places have content
+		 * than FR. Falls back to the full collection if nothing is active at
+		 * all (e.g. before the first rebuild), so the map never collapses to
+		 * a degenerate/empty fit.
+		 */
+		fitTarget(featureCollection) {
+			const active = featureCollection.features.filter((d) => this.hasPosts(d));
+			return active.length > 0 ? { type: 'FeatureCollection', features: active } : featureCollection;
+		}
+
 		renderMap(featureCollection) {
 			const rect = this.mapWrap.getBoundingClientRect();
 			const width = Math.max(280, Math.round(rect.width));
@@ -93,7 +107,7 @@
 			svg.attr('viewBox', '0 0 ' + width + ' ' + height).attr('preserveAspectRatio', 'xMidYMid meet');
 
 			const projection = d3.geoNaturalEarth1();
-			projection.fitSize([width - 12, height - 12], featureCollection);
+			projection.fitSize([width - 12, height - 12], this.fitTarget(featureCollection));
 			const path = d3.geoPath(projection);
 
 			const self = this;
