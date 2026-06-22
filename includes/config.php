@@ -64,18 +64,33 @@ function mv_geo_explorer_manual_name_map(): array {
 
 /**
  * Registry of drill-down-enabled countries (Section 18 "Version 2" of the
- * implementation plan). Each entry's `codes` map a normalized region name
- * (mv_geo_explorer_normalize_name()) to the matching feature `id` in the
- * corresponding regions GeoJSON file, so the data builder can resolve
- * wp_geo_tagger_places region rows to map shapes without a shared code
- * column between the two. Add the next country (UK/Italy/Spain) here once
- * its regions GeoJSON exists — no other code changes needed.
+ * implementation plan), keyed by ISO 3166-1 alpha-2 country code (the same
+ * `country_code` column wp_geo_tagger_places already stores) — NOT by place
+ * slug, since the slug is language-specific (e.g. 'united-kingdom' in EN vs
+ * 'royaume-uni' in FR) while the country code is the same across all three
+ * language indexes. Each entry's `codes` map a normalized region name
+ * (mv_geo_explorer_normalize_name(), checked against name_fr/en/de in turn —
+ * see MV_Geo_Data_Builder::resolve_region_code()) to the matching feature
+ * `id` in the corresponding regions GeoJSON file. Add the next country here
+ * once its regions GeoJSON exists — no other code changes needed.
  */
 function mv_geo_explorer_drilldowns(): array {
     return [
-        'france' => [
+        'fr' => [
             'geo_file' => 'regions-france.simple.geojson',
             'codes'    => mv_geo_explorer_france_region_codes(),
+        ],
+        'gb' => [
+            'geo_file' => 'regions-uk.simple.geojson',
+            'codes'    => mv_geo_explorer_uk_region_codes(),
+        ],
+        'it' => [
+            'geo_file' => 'regions-italy.simple.geojson',
+            'codes'    => mv_geo_explorer_italy_region_codes(),
+        ],
+        'es' => [
+            'geo_file' => 'regions-spain.simple.geojson',
+            'codes'    => mv_geo_explorer_spain_region_codes(),
         ],
     ];
 }
@@ -103,6 +118,144 @@ function mv_geo_explorer_france_region_codes(): array {
         'auvergnerhonealpes'     => '84',
         'provencealpescotedazur' => '93',
         'corse'                  => '94',
+    ];
+}
+
+/**
+ * Normalized region name => feature id in assets/geo/regions-uk.simple.geojson
+ * (ENG/SCT/WLS/NIR — England merged from Eurostat's 9 NUTS1 sub-regions, the
+ * other three are single NUTS1 units). Unlike France, the UK's region tag on
+ * this site is inconsistent — Nominatim's `state` field returns one of these
+ * four nations for most posts, but sometimes a ceremonial county instead
+ * (confirmed live: "Cotswolds" and "Cornwall" both exist as real region-level
+ * tags). Those have no shape here and will list-only, same as Canarias for
+ * Spain below — covering every possible English county is out of scope for
+ * the MVP drilldown. English/French/German name variants are included since
+ * a UK post's region name could come from any of the three Nominatim calls.
+ */
+function mv_geo_explorer_uk_region_codes(): array {
+    return [
+        'england'        => 'ENG',
+        'angleterre'     => 'ENG',
+        'scotland'       => 'SCT',
+        'ecosse'         => 'SCT',
+        'schottland'     => 'SCT',
+        'wales'          => 'WLS',
+        'paysdegalles'   => 'WLS',
+        'northernireland' => 'NIR',
+        'irlandedunord'  => 'NIR',
+        'nordirland'     => 'NIR',
+    ];
+}
+
+/**
+ * Normalized region name => ISTAT region code, matching
+ * assets/geo/regions-italy.simple.geojson. Italian region names are rarely
+ * translated by Nominatim, so the native Italian name is the primary key;
+ * the handful of common English/French/German exonyms are included too.
+ */
+function mv_geo_explorer_italy_region_codes(): array {
+    return [
+        'piemonte'                       => '01',
+        'piedmont'                       => '01',
+        'valledaosta'                    => '02',
+        'valleedaoste'                   => '02',
+        'lombardia'                      => '03',
+        'lombardy'                       => '03',
+        'trentinoaltoadigesudtirol'      => '04',
+        'veneto'                         => '05',
+        'friuliveneziagiulia'            => '06',
+        'liguria'                        => '07',
+        'emiliaromagna'                  => '08',
+        'toscana'                        => '09',
+        'tuscany'                        => '09',
+        'toskana'                        => '09',
+        'umbria'                         => '10',
+        'marche'                         => '11',
+        'lazio'                          => '12',
+        'abruzzo'                        => '13',
+        'abruzzes'                       => '13',
+        'molise'                         => '14',
+        'campania'                       => '15',
+        'puglia'                         => '16',
+        'apulia'                         => '16',
+        'pouilles'                       => '16',
+        'basilicata'                     => '17',
+        'calabria'                       => '18',
+        'calabre'                        => '18',
+        'kalabrien'                      => '18',
+        'sicilia'                        => '19',
+        'sicily'                         => '19',
+        'sicile'                         => '19',
+        'sizilien'                       => '19',
+        'sardegna'                       => '20',
+        'sardinia'                       => '20',
+        'sardaigne'                      => '20',
+        'sardinien'                      => '20',
+    ];
+}
+
+/**
+ * Normalized region name => INE region code, matching
+ * assets/geo/regions-spain.simple.geojson. Canarias, Ceuta and Melilla have
+ * no shape in that file (Canarias is ~1,300km from the mainland — would
+ * force the regions map to zoom out the same way Russia would on the Europe
+ * map; Ceuta/Melilla are tiny African enclaves, same treatment as San
+ * Marino/Andorra-scale micro-territories). Posts tagged with those still
+ * count toward Spain's total and list-only in the drilldown view. Several
+ * autonomous communities are commonly returned by Nominatim under their
+ * native (Catalan/Basque) name rather than the Castilian one — both are
+ * included.
+ */
+function mv_geo_explorer_spain_region_codes(): array {
+    return [
+        'andalucia'                  => '01',
+        'andalusia'                  => '01',
+        'andalousie'                 => '01',
+        'andalusien'                 => '01',
+        'aragon'                     => '02',
+        'aragonien'                  => '02',
+        'asturiasprincipadode'       => '03',
+        'principadodeasturias'       => '03',
+        'asturias'                   => '03',
+        'illesbalears'               => '04',
+        'balearsilles'               => '04',
+        'islasbaleares'              => '04',
+        'balearicislands'            => '04',
+        'ilesbaleares'               => '04',
+        'balearen'                   => '04',
+        'cantabria'                  => '06',
+        'castillayleon'              => '07',
+        'castileandleon'             => '07',
+        'castillalamancha'           => '08',
+        'catalunya'                  => '09',
+        'cataluna'                   => '09',
+        'catalonia'                  => '09',
+        'catalogne'                  => '09',
+        'katalonien'                 => '09',
+        'comunitatvalenciana'        => '10',
+        'comunidadvalenciana'        => '10',
+        'extremadura'                => '11',
+        'galicia'                    => '12',
+        'galice'                     => '12',
+        'madridcomunidadde'          => '13',
+        'comunidaddemadrid'          => '13',
+        'madrid'                     => '13',
+        'murciaregionde'             => '14',
+        'regiondemurcia'             => '14',
+        'murcia'                     => '14',
+        'navarracomunidadforalde'    => '15',
+        'comunidadforaldenavarra'    => '15',
+        'navarra'                    => '15',
+        'navarre'                    => '15',
+        'paisvasco'                  => '16',
+        'euskadi'                    => '16',
+        'basquecountry'              => '16',
+        'paysbasque'                 => '16',
+        'baskenland'                 => '16',
+        'riojala'                    => '17',
+        'larioja'                    => '17',
+        'rioja'                      => '17',
     ];
 }
 

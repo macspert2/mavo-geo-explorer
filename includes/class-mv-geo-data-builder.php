@@ -135,13 +135,19 @@ class MV_Geo_Data_Builder {
         unset($place);
 
         // ---- Step 3: drill-down regions for any enabled country ----------
-        $drilldowns = [];
-        foreach (mv_geo_explorer_drilldowns() as $country_slug => $drilldown_config) {
-            if (!isset($places[$country_slug], $country_rows_by_slug[$country_slug])) {
+        // Keyed by country_code (language-independent), not by slug — see
+        // mv_geo_explorer_drilldowns() docblock for why.
+        $drilldown_registry = mv_geo_explorer_drilldowns();
+        $drilldowns         = [];
+        foreach ($country_rows_by_slug as $country_slug => $row) {
+            $cc              = strtolower((string) ($row->country_code ?? ''));
+            $drilldown_config = $drilldown_registry[$cc] ?? null;
+            if (!$drilldown_config) {
                 continue;
             }
+
             $region_shape_map = self::build_drilldown_regions(
-                $country_rows_by_slug[$country_slug],
+                $row,
                 $drilldown_config['codes'],
                 $country_slug,
                 $lang,
@@ -296,9 +302,8 @@ class MV_Geo_Data_Builder {
                 continue;
             }
 
-            $slug          = sanitize_title($label);
-            $normalized_fr = mv_geo_explorer_normalize_name((string) ($row->name_fr ?? ''));
-            $shape_id      = $codes[$normalized_fr] ?? null;
+            $slug     = sanitize_title($label);
+            $shape_id = self::resolve_region_code($row, $codes);
 
             $places[$slug] = self::build_place_node_generic('region', $label, $term_id, $post_ids, $lang, $shape_id, $country_slug);
             $children[]    = $slug;
@@ -312,6 +317,23 @@ class MV_Geo_Data_Builder {
         }
 
         return $shape_map;
+    }
+
+    /**
+     * Tries name_fr/en/de in turn against a drilldown's normalized-name =>
+     * shape-id table — a region row's name could plausibly be returned in
+     * any of the three Nominatim calls (e.g. Italian/Spanish region names
+     * are sometimes left untranslated, English/French/German UK nation
+     * names are not), so checking only one column risks missing matches.
+     */
+    private static function resolve_region_code(object $row, array $codes): ?string {
+        foreach (['fr', 'en', 'de'] as $lang) {
+            $key = mv_geo_explorer_normalize_name((string) ($row->{'name_' . $lang} ?? ''));
+            if ('' !== $key && isset($codes[$key])) {
+                return $codes[$key];
+            }
+        }
+        return null;
     }
 
     private static function register_shape(array &$shape_map, string $country_code, string $slug): void {
