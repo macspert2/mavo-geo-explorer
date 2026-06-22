@@ -126,9 +126,10 @@ class MV_Geo_Data_Builder {
         foreach ($places as $slug => &$place) {
             if (!empty($place['_candidates'])) {
                 $needed              = max(0, self::TOP_POSTS_LIMIT - count($place['top_posts']));
+                $sorted_candidates   = self::sort_post_ids_by_views($place['_candidates']);
                 $place['top_posts'] = array_merge(
                     $place['top_posts'],
-                    self::posts_to_top_posts(array_slice($place['_candidates'], 0, $needed))
+                    self::posts_to_top_posts(array_slice($sorted_candidates, 0, $needed))
                 );
             }
             unset($place['_candidates']);
@@ -210,15 +211,29 @@ class MV_Geo_Data_Builder {
     }
 
     /**
-     * @return int[] Post IDs, newest first.
+     * @return int[] Post IDs, most-viewed first (per the `views` postmeta
+     *               written by the mavo-stats plugin — a rolling ~90-day
+     *               total, refreshed daily). The meta_query's EXISTS/
+     *               NOT EXISTS pair is required so posts that don't have a
+     *               `views` value yet (e.g. brand new posts) are still
+     *               included — just sorted last — rather than silently
+     *               excluded from the count entirely (a bare `meta_key`
+     *               filter would otherwise turn this into an inner join).
      */
     private static function query_post_ids_for_term(int $term_id, string $lang): array {
         $args = [
             'post_type'           => 'post',
             'post_status'         => 'publish',
             'tag__in'             => [$term_id],
-            'orderby'             => 'date',
-            'order'               => 'DESC',
+            'meta_query'          => [
+                'relation'     => 'OR',
+                // 'type' => 'NUMERIC' is required here, not optional — without
+                // it, ordering by this clause compares `views` as a string
+                // ("156" sorts before "23"), silently scrambling the ranking.
+                'views_clause' => ['key' => 'views', 'compare' => 'EXISTS', 'type' => 'NUMERIC'],
+                ['key' => 'views', 'compare' => 'NOT EXISTS'],
+            ],
+            'orderby'             => ['views_clause' => 'DESC'],
             'posts_per_page'      => -1,
             'fields'              => 'ids',
             'ignore_sticky_posts' => true,
@@ -354,6 +369,25 @@ class MV_Geo_Data_Builder {
         if (in_array($country_code, mv_geo_explorer_europe_country_codes(), true)) {
             $shape_map[$shape_id] = $slug;
         }
+    }
+
+    /**
+     * Used only for the ad-hoc fallback bucket's candidate posts (Step 2),
+     * which come from a plain PHP array, not a WP_Query — the fast-path
+     * country/region query already sorts by views at the DB level via
+     * query_post_ids_for_term(). Posts without a `views` value yet sort
+     * last (treated as 0), same as the DB query's NULL-sorts-last behaviour.
+     *
+     * @param int[] $post_ids
+     * @return int[]
+     */
+    private static function sort_post_ids_by_views(array $post_ids): array {
+        $views = [];
+        foreach ($post_ids as $post_id) {
+            $views[$post_id] = (int) get_post_meta($post_id, 'views', true);
+        }
+        usort($post_ids, static fn ($a, $b) => $views[$b] - $views[$a]);
+        return $post_ids;
     }
 
     /**
