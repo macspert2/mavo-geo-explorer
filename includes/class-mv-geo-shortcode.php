@@ -68,6 +68,7 @@ class MV_Geo_Shortcode {
             'theme'       => $theme,
             'indexUrl'    => self::index_url($lang),
             'geoUrl'      => MV_GEO_EXPLORER_URL . 'assets/geo/europe-countries.simple.geojson',
+            'geoBaseUrl'  => MV_GEO_EXPLORER_URL . 'assets/geo/',
             'strings'     => $strings,
         ];
 

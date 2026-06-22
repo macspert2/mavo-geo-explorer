@@ -20,6 +20,7 @@ defined('ABSPATH') || exit;
     <div class="mv-geo-explorer__layout">
         <div class="mv-geo-explorer__map-wrap">
             <div class="mv-geo-explorer__loading"><?php echo esc_html($strings['loading']); ?></div>
+            <div class="mv-geo-explorer__breadcrumb" hidden></div>
             <svg class="mv-geo-explorer__svg" aria-label="<?php echo esc_attr($strings['map_aria_label']); ?>" role="img"></svg>
         </div>
         <aside class="mv-geo-explorer__panel" aria-live="polite">

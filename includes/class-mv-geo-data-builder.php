@@ -36,6 +36,7 @@ class MV_Geo_Data_Builder {
 
         $places              = [];
         $shape_map           = [];
+        $country_rows_by_slug = []; // slug => wp_geo_tagger_places row, for drilldown regions
         $bucket_index_by_cc  = []; // country_code => slug, for the fallback pass
         $matched_post_ids    = [];
         $matched_hierarchy   = 0;
@@ -67,7 +68,8 @@ class MV_Geo_Data_Builder {
             $places[$slug] = self::build_place_node($label, $term_id, $cc, $post_ids, $lang);
             self::register_shape($shape_map, $cc, $slug);
 
-            $bucket_index_by_cc[$cc] = $slug;
+            $country_rows_by_slug[$slug] = $row;
+            $bucket_index_by_cc[$cc]     = $slug;
             $matched_hierarchy      += count($post_ids);
             foreach ($post_ids as $id) {
                 $matched_post_ids[$id] = true;
@@ -132,12 +134,35 @@ class MV_Geo_Data_Builder {
         }
         unset($place);
 
+        // ---- Step 3: drill-down regions for any enabled country ----------
+        $drilldowns = [];
+        foreach (mv_geo_explorer_drilldowns() as $country_slug => $drilldown_config) {
+            if (!isset($places[$country_slug], $country_rows_by_slug[$country_slug])) {
+                continue;
+            }
+            $region_shape_map = self::build_drilldown_regions(
+                $country_rows_by_slug[$country_slug],
+                $drilldown_config['codes'],
+                $country_slug,
+                $lang,
+                $places
+            );
+            if (!empty($region_shape_map)) {
+                $drilldowns[$country_slug] = [
+                    'geo_file'  => $drilldown_config['geo_file'],
+                    'shape_map' => $region_shape_map,
+                ];
+                $places[$country_slug]['drilldown'] = true;
+            }
+        }
+
         $processed = count($all_post_ids);
         $data      = [
             'lang'         => $lang,
             'generated_at' => current_time('c'),
             'default_view' => 'europe',
             'shape_map'    => $shape_map,
+            'drilldowns'   => $drilldowns,
             'places'       => $places,
         ];
 
@@ -216,17 +241,77 @@ class MV_Geo_Data_Builder {
     }
 
     private static function build_place_node(string $label, int $term_id, string $country_code, array $post_ids, string $lang): array {
+        return self::build_place_node_generic('country', $label, $term_id, $post_ids, $lang, mv_geo_explorer_alpha2_to_alpha3()[$country_code] ?? null);
+    }
+
+    private static function build_place_node_generic(string $type, string $label, int $term_id, array $post_ids, string $lang, ?string $map_shape_id, ?string $parent = null): array {
         $url = get_term_link($term_id, 'post_tag');
 
-        return [
-            'type'         => 'country',
+        $node = [
+            'type'         => $type,
             'label'        => $label,
             'post_count'   => count($post_ids),
             'url'          => is_wp_error($url) ? mv_geo_explorer_lang_fallback_url($lang) : $url,
-            'map_shape_id' => mv_geo_explorer_alpha2_to_alpha3()[$country_code] ?? null,
+            'map_shape_id' => $map_shape_id,
             'drilldown'    => false,
             'top_posts'    => self::posts_to_top_posts(array_slice($post_ids, 0, self::TOP_POSTS_LIMIT)),
         ];
+        if (null !== $parent) {
+            $node['parent'] = $parent;
+        }
+        return $node;
+    }
+
+    /**
+     * Regions under a drill-down-enabled country (Section 18 "Version 2").
+     * Reuses the same tag__in counting as countries — no separate fallback
+     * pass needed, since any post with a region tag necessarily also has
+     * the country tag and is already covered by the diagnostics counters
+     * from the country-level pass above.
+     *
+     * @param array<string,string> $codes Normalized French region name => GeoJSON feature id.
+     * @return array<string,string> Map shape id => region slug, for places.{country}.children with posts.
+     */
+    private static function build_drilldown_regions(object $country_row, array $codes, string $country_slug, string $lang, array &$places): array {
+        global $wpdb;
+        $table   = $wpdb->prefix . 'geo_tagger_places';
+        $regions = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM {$table} WHERE level = 'region' AND parent_id = %d", $country_row->id)
+        ) ?: [];
+
+        $shape_map = [];
+        $children  = [];
+
+        foreach ($regions as $row) {
+            $term_id = (int) ($row->{'term_id_' . $lang} ?? 0);
+            if (!$term_id) {
+                continue;
+            }
+            $post_ids = self::query_post_ids_for_term($term_id, $lang);
+            if (empty($post_ids)) {
+                continue;
+            }
+            $label = (string) ($row->{'name_' . $lang} ?? '');
+            if ('' === $label) {
+                continue;
+            }
+
+            $slug          = sanitize_title($label);
+            $normalized_fr = mv_geo_explorer_normalize_name((string) ($row->name_fr ?? ''));
+            $shape_id      = $codes[$normalized_fr] ?? null;
+
+            $places[$slug] = self::build_place_node_generic('region', $label, $term_id, $post_ids, $lang, $shape_id, $country_slug);
+            $children[]    = $slug;
+            if ($shape_id) {
+                $shape_map[$shape_id] = $slug;
+            }
+        }
+
+        if (!empty($children)) {
+            $places[$country_slug]['children'] = $children;
+        }
+
+        return $shape_map;
     }
 
     private static function register_shape(array &$shape_map, string $country_code, string $slug): void {

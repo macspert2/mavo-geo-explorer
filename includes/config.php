@@ -62,6 +62,50 @@ function mv_geo_explorer_manual_name_map(): array {
     ];
 }
 
+/**
+ * Registry of drill-down-enabled countries (Section 18 "Version 2" of the
+ * implementation plan). Each entry's `codes` map a normalized region name
+ * (mv_geo_explorer_normalize_name()) to the matching feature `id` in the
+ * corresponding regions GeoJSON file, so the data builder can resolve
+ * wp_geo_tagger_places region rows to map shapes without a shared code
+ * column between the two. Add the next country (UK/Italy/Spain) here once
+ * its regions GeoJSON exists — no other code changes needed.
+ */
+function mv_geo_explorer_drilldowns(): array {
+    return [
+        'france' => [
+            'geo_file' => 'regions-france.simple.geojson',
+            'codes'    => mv_geo_explorer_france_region_codes(),
+        ],
+    ];
+}
+
+/**
+ * Normalized French region name => INSEE region code (matches the `id`
+ * property in assets/geo/regions-france.simple.geojson). The 13 metropolitan
+ * regions as of the 2016 redistricting; overseas regions (Guadeloupe,
+ * Martinique, etc.) have no shape in that file and are intentionally
+ * omitted here — they'd still appear in the destination list if they ever
+ * have posts, just with no map shape, same as Russia on the Europe map.
+ */
+function mv_geo_explorer_france_region_codes(): array {
+    return [
+        'iledefrance'            => '11',
+        'centrevaldeloire'       => '24',
+        'bourgognefranchecomte'  => '27',
+        'normandie'              => '28',
+        'hautsdefrance'          => '32',
+        'grandest'               => '44',
+        'paysdelaloire'          => '52',
+        'bretagne'               => '53',
+        'nouvelleaquitaine'      => '75',
+        'occitanie'              => '76',
+        'auvergnerhonealpes'     => '84',
+        'provencealpescotedazur' => '93',
+        'corse'                  => '94',
+    ];
+}
+
 function mv_geo_explorer_default_options(): array {
     return [
         'enabled_languages' => ['fr', 'en', 'de'],
@@ -99,6 +143,8 @@ function mv_geo_explorer_ui_strings(): array {
             'error'            => 'La carte n’a pas pu être chargée pour le moment.',
             'list_heading'     => 'Toutes nos destinations',
             'map_aria_label'   => 'Carte interactive des destinations',
+            'view_regions'     => 'Voir les régions',
+            'back_to_europe'   => 'Retour à l’Europe',
         ],
         'en' => [
             'loading'          => 'Loading the map…',
@@ -111,6 +157,8 @@ function mv_geo_explorer_ui_strings(): array {
             'error'            => 'The map could not be loaded right now.',
             'list_heading'     => 'All our destinations',
             'map_aria_label'   => 'Interactive map of destinations',
+            'view_regions'     => 'View regions',
+            'back_to_europe'   => 'Back to Europe',
         ],
         'de' => [
             'loading'          => 'Karte wird geladen…',
@@ -123,6 +171,8 @@ function mv_geo_explorer_ui_strings(): array {
             'error'            => 'Die Karte konnte gerade nicht geladen werden.',
             'list_heading'     => 'Alle unsere Reiseziele',
             'map_aria_label'   => 'Interaktive Karte der Reiseziele',
+            'view_regions'     => 'Regionen ansehen',
+            'back_to_europe'   => 'Zurück zu Europa',
         ],
     ];
 }

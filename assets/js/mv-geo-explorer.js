@@ -8,14 +8,20 @@
 			this.svg = root.querySelector('.mv-geo-explorer__svg');
 			this.mapWrap = root.querySelector('.mv-geo-explorer__map-wrap');
 			this.loadingEl = root.querySelector('.mv-geo-explorer__loading');
+			this.breadcrumbEl = root.querySelector('.mv-geo-explorer__breadcrumb');
 			this.panelEl = root.querySelector('.mv-geo-explorer__panel');
 			this.listItemsEl = root.querySelector('.mv-geo-explorer__list-items');
+			this.listHeadingEl = root.querySelector('.mv-geo-explorer__list-heading');
 
 			this.index = null;
 			this.geojson = null;
 			this.selected = null;
 			this.hovered = null;
 			this.tooltipEl = null;
+
+			// Drill-down state (Europe ⇄ a single country's regions, e.g. France).
+			this.drillSlug = null;
+			this.drillGeoCache = {};
 
 			this._onResize = this.debounce(() => this.render(), 150);
 		}
@@ -60,8 +66,9 @@
 		}
 
 		render() {
-			if (this.geojson) {
-				this.renderMap(this.geojson);
+			const featureCollection = this.drillSlug ? this.drillGeoCache[this.drillSlug] : this.geojson;
+			if (featureCollection) {
+				this.renderMap(featureCollection);
 			}
 		}
 
@@ -128,6 +135,15 @@
 			this.panelEl.appendChild(this.el('h2', 'mv-geo-explorer__panel-title', place.label));
 			this.panelEl.appendChild(this.el('p', 'mv-geo-explorer__panel-count', this.countLabel(place.post_count)));
 
+			if (place.drilldown && this.index.drilldowns && this.index.drilldowns[slug]) {
+				const drillBtn = document.createElement('button');
+				drillBtn.type = 'button';
+				drillBtn.className = 'mv-geo-explorer__panel-drill';
+				drillBtn.textContent = strings.view_regions;
+				drillBtn.addEventListener('click', () => this.drillInto(slug));
+				this.panelEl.appendChild(drillBtn);
+			}
+
 			if (this.config.showPosts && Array.isArray(place.top_posts) && place.top_posts.length) {
 				this.panelEl.appendChild(this.el('p', 'mv-geo-explorer__panel-subheading', strings.top_articles));
 				const list = document.createElement('ul');
@@ -170,11 +186,16 @@
 				return;
 			}
 
-			const strings = this.config.strings;
+			const drillSlug = this.drillSlug;
 			const places = Object.keys(this.index.places)
 				.map((slug) => Object.assign({ slug }, this.index.places[slug]))
-				.filter((place) => place.post_count > 0)
+				.filter((place) => place.post_count > 0 && (drillSlug ? place.parent === drillSlug : !place.parent))
 				.sort((a, b) => b.post_count - a.post_count);
+
+			if (this.listHeadingEl) {
+				const current = drillSlug && this.placeFor(drillSlug);
+				this.listHeadingEl.textContent = current ? current.label : this.config.strings.list_heading;
+			}
 
 			this.listItemsEl.innerHTML = '';
 			places.forEach((place) => {
@@ -215,8 +236,84 @@
 		}
 
 		// -------------------------------------------------------------
+		// Drill-down (Europe ⇄ a country's regions)
+		// -------------------------------------------------------------
+
+		async drillInto(countrySlug) {
+			const drilldown = this.index && this.index.drilldowns && this.index.drilldowns[countrySlug];
+			if (!drilldown) {
+				return;
+			}
+
+			if (!this.drillGeoCache[countrySlug]) {
+				try {
+					const res = await fetch(this.config.geoBaseUrl + drilldown.geo_file, { credentials: 'omit' });
+					if (!res.ok) {
+						throw new Error('mv-geo-explorer: failed to load drilldown geojson (' + res.status + ')');
+					}
+					this.drillGeoCache[countrySlug] = await res.json();
+				} catch (err) {
+					return; // keep the current view rather than show a broken one
+				}
+			}
+
+			this.drillSlug = countrySlug;
+			this.afterViewChange();
+		}
+
+		drillBack() {
+			this.drillSlug = null;
+			this.afterViewChange();
+		}
+
+		afterViewChange() {
+			this.selected = null;
+			this.hovered = null;
+			this.hideTooltip();
+			this.renderBreadcrumb();
+			this.render();
+			this.renderPanel(null);
+			if (this.config.showList) {
+				this.renderList();
+			}
+		}
+
+		renderBreadcrumb() {
+			if (!this.breadcrumbEl) {
+				return;
+			}
+			this.breadcrumbEl.innerHTML = '';
+
+			if (!this.drillSlug) {
+				this.breadcrumbEl.hidden = true;
+				return;
+			}
+
+			const back = document.createElement('button');
+			back.type = 'button';
+			back.className = 'mv-geo-explorer__breadcrumb-back';
+			back.textContent = this.config.strings.back_to_europe;
+			back.addEventListener('click', () => this.drillBack());
+			this.breadcrumbEl.appendChild(back);
+
+			const place = this.placeFor(this.drillSlug);
+			if (place) {
+				this.breadcrumbEl.appendChild(this.el('span', 'mv-geo-explorer__breadcrumb-current', place.label));
+			}
+
+			this.breadcrumbEl.hidden = false;
+		}
+
+		// -------------------------------------------------------------
 		// Helpers
 		// -------------------------------------------------------------
+
+		activeShapeMap() {
+			if (this.drillSlug && this.index && this.index.drilldowns && this.index.drilldowns[this.drillSlug]) {
+				return this.index.drilldowns[this.drillSlug].shape_map;
+			}
+			return (this.index && this.index.shape_map) || {};
+		}
 
 		updateShapeClasses() {
 			if (!this.svg) {
@@ -245,7 +342,7 @@
 			if (!this.index || !d || !d.properties) {
 				return null;
 			}
-			return this.index.shape_map[d.properties.id] || null;
+			return this.activeShapeMap()[d.properties.id] || null;
 		}
 
 		placeFor(slug) {

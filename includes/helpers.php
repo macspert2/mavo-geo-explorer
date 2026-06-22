@@ -14,6 +14,19 @@ function mv_geo_explorer_current_lang(): string {
     return in_array($lang, MV_GEO_EXPLORER_ALLOWED_LANGS, true) ? $lang : 'fr';
 }
 
+/**
+ * Lowercase, accent-stripped, alphanumeric-only form of a place name — used
+ * to match a wp_geo_tagger_places region name (whatever punctuation/accents
+ * Nominatim happened to return) against the static region-code lookup
+ * tables in config.php, without depending on sanitize_title()'s exact
+ * transliteration behaviour.
+ */
+function mv_geo_explorer_normalize_name(string $name): string {
+    $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+    $ascii = $ascii !== false ? $ascii : $name;
+    return (string) preg_replace('/[^a-z0-9]/', '', mb_strtolower($ascii));
+}
+
 function mv_geo_explorer_options(): array {
     $stored = get_option('mv_geo_explorer_options', []);
     if (!is_array($stored)) {

@@ -10,6 +10,15 @@
     "PRT": "portugal",
     "GRC": "grece"
   },
+  "drilldowns": {
+    "france": {
+      "geo_file": "regions-france.simple.geojson",
+      "shape_map": {
+        "53": "bretagne",
+        "93": "provence-alpes-cote-d-azur"
+      }
+    }
+  },
   "places": {
     "france": {
       "type": "country",
@@ -17,11 +26,36 @@
       "post_count": 145,
       "url": "https://www.mamanvoyage.com/tag/france/",
       "map_shape_id": "FRA",
-      "drilldown": false,
+      "drilldown": true,
+      "children": ["bretagne", "provence-alpes-cote-d-azur"],
       "top_posts": [
         { "id": 101, "title": "France en famille : nos meilleures idées", "url": "https://www.mamanvoyage.com/france-en-famille/", "thumb": "" },
         { "id": 102, "title": "Bretagne avec des enfants", "url": "https://www.mamanvoyage.com/bretagne-enfants/", "thumb": "" },
         { "id": 103, "title": "Provence en famille", "url": "https://www.mamanvoyage.com/provence-famille/", "thumb": "" }
+      ]
+    },
+    "bretagne": {
+      "type": "region",
+      "label": "Bretagne",
+      "parent": "france",
+      "post_count": 32,
+      "url": "https://www.mamanvoyage.com/tag/bretagne/",
+      "map_shape_id": "53",
+      "drilldown": false,
+      "top_posts": [
+        { "id": 110, "title": "Saint-Malo en famille", "url": "https://www.mamanvoyage.com/saint-malo-famille/", "thumb": "" }
+      ]
+    },
+    "provence-alpes-cote-d-azur": {
+      "type": "region",
+      "label": "Provence-Alpes-Côte d'Azur",
+      "parent": "france",
+      "post_count": 19,
+      "url": "https://www.mamanvoyage.com/tag/provence-alpes-cote-dazur/",
+      "map_shape_id": "93",
+      "drilldown": false,
+      "top_posts": [
+        { "id": 111, "title": "Marseille avec des enfants", "url": "https://www.mamanvoyage.com/marseille-famille/", "thumb": "" }
       ]
     },
     "italie": {
