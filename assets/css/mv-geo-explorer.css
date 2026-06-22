@@ -2,7 +2,7 @@
 	/* Water: a light tint of the blog's own link blue (--mavo-blue: #4e74a5
 	   in the theme), not an arbitrary color — keeps the map visually tied
 	   to the rest of the site. */
-	--mv-geo-bg: #dce3ed;
+	--mv-geo-bg: #f1f4f8;
 	--mv-geo-land-empty: #eee4d7;
 	--mv-geo-land-active: #d9eadf;
 	--mv-geo-land-active-drilldown: #b9d2c0;
