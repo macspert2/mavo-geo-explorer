@@ -420,12 +420,25 @@ class MV_Geo_Data_Builder {
             $thumb = get_the_post_thumbnail_url($post_id, 'medium');
             $out[] = [
                 'id'    => $post_id,
-                'title' => get_the_title($post_id),
+                'title' => self::clean_title($post_id),
                 'url'   => get_permalink($post_id),
                 'thumb' => $thumb ?: '',
             ];
         }
         return $out;
+    }
+
+    /**
+     * get_the_title() runs the `the_title` filter, which includes
+     * wptexturize() — it HTML-entity-encodes quotes/dashes (e.g. "L'Algarve"
+     * becomes "L&#8217;Algarve") for direct HTML output. We're putting this
+     * into a JSON payload that the frontend sets via `.textContent` (and the
+     * admin diagnostics screen, escaped via esc_html()) — neither parses
+     * HTML, so the entity would show up as literal text instead of an
+     * apostrophe. Decoding back to plain UTF-8 here is correct for both.
+     */
+    private static function clean_title(int $post_id): string {
+        return html_entity_decode(get_the_title($post_id), ENT_QUOTES, 'UTF-8');
     }
 
     // -------------------------------------------------------------------
@@ -517,7 +530,8 @@ class MV_Geo_Data_Builder {
                 return strtoupper($admin['country_code']);
             }
         }
-        return get_the_title($post_id) ?: ('#' . $post_id);
+        $title = self::clean_title($post_id);
+        return '' !== $title ? $title : ('#' . $post_id);
     }
 
     private static function top_unmatched(array $unmatched_log, int $limit = 20): array {
