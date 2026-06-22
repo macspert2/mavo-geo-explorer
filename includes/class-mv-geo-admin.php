@@ -43,6 +43,8 @@ class MV_Geo_Admin {
         echo '<div class="wrap mv-geo-explorer-admin">';
         echo '<h1>Maman Voyage Geo Explorer</h1>';
 
+        $this->render_shortcode_guide();
+
         if (null !== $feedback) {
             $this->render_feedback_notice($feedback);
         }
@@ -58,6 +60,49 @@ class MV_Geo_Admin {
     }
 
     // -------------------------------------------------------------------
+
+    private function render_shortcode_guide(): void {
+        echo '<h2>' . esc_html__('How to use the shortcode', 'mv-geo-explorer') . '</h2>';
+        echo '<p>' . wp_kses(
+            __('Add <code>[mv_geo_explorer]</code> to any page or post content to display the interactive map. The map\'s assets (D3, the plugin\'s CSS/JS, the geo data) only load on pages that actually contain the shortcode.', 'mv-geo-explorer'),
+            ['code' => []]
+        ) . '</p>';
+
+        $rows = [
+            ['lang', 'current, fr, en, de', 'current', __('Which language\'s index/UI strings to show. "current" follows Polylang\'s current language.', 'mv-geo-explorer')],
+            ['default_view', 'europe', 'europe', __('Initial map view. "World" is still reachable from the map itself via the "View the whole world" link — there is no attribute yet to start a shortcode instance zoomed out to World.', 'mv-geo-explorer')],
+            ['show_list', '1, 0', '1', __('Show the accessible destination list below the map.', 'mv-geo-explorer')],
+            ['show_counts', '1, 0', '1', __('Show the post count next to each destination in that list.', 'mv-geo-explorer')],
+            ['show_posts', '1, 0', '1', __('Show the "top articles" list in the side panel when a place is selected.', 'mv-geo-explorer')],
+            ['max_posts', '1–10', '3', __('How many top articles to show per place in the side panel.', 'mv-geo-explorer')],
+            ['theme', 'default, minimal', 'default', __('"minimal" drops the panel/map background and border for a more stripped-down look.', 'mv-geo-explorer')],
+        ];
+
+        echo '<table class="widefat striped" style="max-width:820px"><thead><tr>'
+            . '<th>' . esc_html__('Attribute', 'mv-geo-explorer') . '</th>'
+            . '<th>' . esc_html__('Values', 'mv-geo-explorer') . '</th>'
+            . '<th>' . esc_html__('Default', 'mv-geo-explorer') . '</th>'
+            . '<th>' . esc_html__('Description', 'mv-geo-explorer') . '</th>'
+            . '</tr></thead><tbody>';
+        foreach ($rows as [$attr, $values, $default, $description]) {
+            printf(
+                '<tr><td><code>%s</code></td><td>%s</td><td><code>%s</code></td><td>%s</td></tr>',
+                esc_html($attr),
+                esc_html($values),
+                esc_html($default),
+                esc_html($description)
+            );
+        }
+        echo '</tbody></table>';
+
+        echo '<p>' . esc_html__('Example:', 'mv-geo-explorer') . '</p>';
+        echo '<p><code>[mv_geo_explorer default_view="europe" show_list="1" show_posts="1" max_posts="3"]</code></p>';
+
+        echo '<p class="description">' . esc_html__(
+            'The map needs at least one rebuild below before it shows real data — until then it falls back to bundled placeholder data so the shortcode never renders blank.',
+            'mv-geo-explorer'
+        ) . '</p>';
+    }
 
     private function maybe_handle_rebuild(): ?array {
         if (empty($_POST['mv_geo_explorer_rebuild'])) {

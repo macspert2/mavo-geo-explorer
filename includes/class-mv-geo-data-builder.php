@@ -35,7 +35,8 @@ class MV_Geo_Data_Builder {
         }
 
         $places              = [];
-        $shape_map           = [];
+        $shape_map           = []; // Europe-only — see register_shape()
+        $world_shape_map     = []; // every country worldwide, for the World view
         $country_rows_by_slug = []; // slug => wp_geo_tagger_places row, for drilldown regions
         $bucket_index_by_cc  = []; // country_code => slug, for the fallback pass
         $matched_post_ids    = [];
@@ -66,7 +67,7 @@ class MV_Geo_Data_Builder {
             $cc   = strtolower((string) ($row->country_code ?? ''));
 
             $places[$slug] = self::build_place_node($label, $term_id, $cc, $post_ids, $lang);
-            self::register_shape($shape_map, $cc, $slug);
+            self::register_shape($shape_map, $world_shape_map, $cc, $slug);
 
             $country_rows_by_slug[$slug] = $row;
             $bucket_index_by_cc[$cc]     = $slug;
@@ -164,12 +165,13 @@ class MV_Geo_Data_Builder {
 
         $processed = count($all_post_ids);
         $data      = [
-            'lang'         => $lang,
-            'generated_at' => current_time('c'),
-            'default_view' => 'europe',
-            'shape_map'    => $shape_map,
-            'drilldowns'   => $drilldowns,
-            'places'       => $places,
+            'lang'            => $lang,
+            'generated_at'    => current_time('c'),
+            'default_view'    => 'europe',
+            'shape_map'       => $shape_map,
+            'world_shape_map' => $world_shape_map,
+            'drilldowns'      => $drilldowns,
+            'places'          => $places,
         ];
 
         $file_path = self::write_index($lang, $data);
@@ -336,9 +338,20 @@ class MV_Geo_Data_Builder {
         return null;
     }
 
-    private static function register_shape(array &$shape_map, string $country_code, string $slug): void {
+    /**
+     * $shape_map (Europe view) only gets an entry when the country is part of
+     * the curated Europe set — otherwise a country with posts anywhere in the
+     * world would end up "on" the Europe map/list just because it has a
+     * resolvable alpha-3 code. $world_shape_map gets every resolvable country
+     * unconditionally, for the World view.
+     */
+    private static function register_shape(array &$shape_map, array &$world_shape_map, string $country_code, string $slug): void {
         $shape_id = mv_geo_explorer_alpha2_to_alpha3()[$country_code] ?? null;
-        if ($shape_id) {
+        if (!$shape_id) {
+            return;
+        }
+        $world_shape_map[$shape_id] = $slug;
+        if (in_array($country_code, mv_geo_explorer_europe_country_codes(), true)) {
             $shape_map[$shape_id] = $slug;
         }
     }

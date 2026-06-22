@@ -406,6 +406,9 @@
 			if (this.drillSlug && this.index && this.index.drilldowns && this.index.drilldowns[this.drillSlug]) {
 				return this.index.drilldowns[this.drillSlug].shape_map;
 			}
+			if (this.baseView === 'world') {
+				return (this.index && this.index.world_shape_map) || {};
+			}
 			return (this.index && this.index.shape_map) || {};
 		}
 

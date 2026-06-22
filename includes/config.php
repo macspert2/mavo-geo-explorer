@@ -66,6 +66,25 @@ function mv_geo_explorer_alpha2_to_alpha3(): array {
 }
 
 /**
+ * The country_codes actually present as features in
+ * assets/geo/europe-countries.simple.geojson (the same curated set used to
+ * build that file). Needed since mv_geo_explorer_alpha2_to_alpha3() above
+ * now covers every country worldwide (for the World view) — without this,
+ * the data builder can't tell "this country has a resolvable alpha-3 code"
+ * apart from "this country is actually shown on the Europe map", and the
+ * Europe view's destination list would wrongly include every country with
+ * posts worldwide instead of just the ~49 European ones.
+ */
+function mv_geo_explorer_europe_country_codes(): array {
+    return [
+        'ad', 'al', 'am', 'at', 'ax', 'az', 'ba', 'be', 'bg', 'by', 'ch', 'cy',
+        'cz', 'de', 'dk', 'ee', 'es', 'fi', 'fo', 'fr', 'gb', 'ge', 'gr', 'hr',
+        'hu', 'ie', 'im', 'is', 'it', 'li', 'lt', 'lu', 'lv', 'md', 'me', 'mk',
+        'mt', 'nl', 'no', 'pl', 'pt', 'ro', 'rs', 'se', 'si', 'sk', 'tr', 'ua', 'xk',
+    ];
+}
+
+/**
  * Last-resort fallback: maps a raw place name (as seen on a post's existing
  * tags, or returned by Geo Mashup) to a canonical place slug, for posts that
  * have no resolvable continent/country/region/city hierarchy at all. Matched
