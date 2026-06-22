@@ -263,7 +263,8 @@
 
 			if (!this.drillGeoCache[countrySlug]) {
 				try {
-					const res = await fetch(this.config.geoBaseUrl + drilldown.geo_file, { credentials: 'omit' });
+					const url = this.config.geoBaseUrl + drilldown.geo_file + '?ver=' + encodeURIComponent(this.config.assetVersion || '');
+					const res = await fetch(url, { credentials: 'omit' });
 					if (!res.ok) {
 						throw new Error('mv-geo-explorer: failed to load drilldown geojson (' + res.status + ')');
 					}

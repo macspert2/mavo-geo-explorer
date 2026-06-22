@@ -66,10 +66,11 @@ class MV_Geo_Shortcode {
             'showPosts'   => (bool) absint($atts['show_posts']),
             'maxPosts'    => $max_posts,
             'theme'       => $theme,
-            'indexUrl'    => self::index_url($lang),
-            'geoUrl'      => MV_GEO_EXPLORER_URL . 'assets/geo/europe-countries.simple.geojson',
-            'geoBaseUrl'  => MV_GEO_EXPLORER_URL . 'assets/geo/',
-            'strings'     => $strings,
+            'indexUrl'     => self::index_url($lang),
+            'geoUrl'       => add_query_arg('ver', MV_GEO_EXPLORER_VERSION, MV_GEO_EXPLORER_URL . 'assets/geo/europe-countries.simple.geojson'),
+            'geoBaseUrl'   => MV_GEO_EXPLORER_URL . 'assets/geo/',
+            'assetVersion' => MV_GEO_EXPLORER_VERSION,
+            'strings'      => $strings,
         ];
 
         ob_start();
@@ -80,11 +81,20 @@ class MV_Geo_Shortcode {
     /**
      * Generated index if the admin has already run a rebuild, otherwise the
      * bundled fixture so the map still shows something sensible on first use.
+     *
+     * Cache-busted so browsers don't keep serving a stale copy after a
+     * rebuild — none of the geo/data fetch URLs go through wp_enqueue_*, so
+     * unlike the plugin's CSS/JS they get no `?ver=` automatically. The
+     * generated index changes independently of the plugin version (every
+     * admin rebuild), so it's busted by the file's own mtime instead.
      */
     private static function index_url(string $lang): string {
-        if (file_exists(mv_geo_explorer_index_path($lang))) {
-            return mv_geo_explorer_uploads_url() . 'geo-index-' . $lang . '.json';
+        $path = mv_geo_explorer_index_path($lang);
+        if (file_exists($path)) {
+            $url = mv_geo_explorer_uploads_url() . 'geo-index-' . $lang . '.json';
+            return add_query_arg('ver', filemtime($path), $url);
         }
-        return MV_GEO_EXPLORER_URL . 'assets/data/geo-index-' . $lang . '.json';
+        $url = MV_GEO_EXPLORER_URL . 'assets/data/geo-index-' . $lang . '.json';
+        return add_query_arg('ver', MV_GEO_EXPLORER_VERSION, $url);
     }
 }
