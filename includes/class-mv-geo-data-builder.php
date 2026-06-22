@@ -211,30 +211,49 @@ class MV_Geo_Data_Builder {
     }
 
     /**
-     * @return int[] Post IDs, most-viewed first (per the `views` postmeta
-     *               written by the mavo-stats plugin — a rolling ~90-day
-     *               total, refreshed daily). The meta_query's EXISTS/
-     *               NOT EXISTS pair is required so posts that don't have a
-     *               `views` value yet (e.g. brand new posts) are still
-     *               included — just sorted last — rather than silently
-     *               excluded from the count entirely (a bare `meta_key`
-     *               filter would otherwise turn this into an inner join).
+     * Every post tagged with this term — used for post_count, so it must
+     * never exclude a post just because it lacks view data. Order doesn't
+     * matter here (top_posts ranking comes from query_top_viewed_post_ids_for_term()
+     * instead); kept as date DESC for stable, predictable results.
+     *
+     * @return int[]
      */
     private static function query_post_ids_for_term(int $term_id, string $lang): array {
         $args = [
             'post_type'           => 'post',
             'post_status'         => 'publish',
             'tag__in'             => [$term_id],
-            'meta_query'          => [
-                'relation'     => 'OR',
-                // 'type' => 'NUMERIC' is required here, not optional — without
-                // it, ordering by this clause compares `views` as a string
-                // ("156" sorts before "23"), silently scrambling the ranking.
-                'views_clause' => ['key' => 'views', 'compare' => 'EXISTS', 'type' => 'NUMERIC'],
-                ['key' => 'views', 'compare' => 'NOT EXISTS'],
-            ],
-            'orderby'             => ['views_clause' => 'DESC'],
+            'orderby'             => 'date',
+            'order'               => 'DESC',
             'posts_per_page'      => -1,
+            'fields'              => 'ids',
+            'ignore_sticky_posts' => true,
+            'no_found_rows'       => true,
+        ];
+        if (function_exists('pll_languages_list')) {
+            $args['lang'] = $lang;
+        }
+        return (new WP_Query($args))->posts;
+    }
+
+    /**
+     * The `$limit` most-viewed posts for this term, per the `views`
+     * postmeta written by the mavo-stats plugin (a rolling ~90-day total,
+     * refreshed daily). A post with no `views` value yet (e.g. brand new)
+     * won't appear here — that's fine for a bounded top-N "most popular"
+     * list, just not appropriate for the full-count query above.
+     *
+     * @return int[]
+     */
+    private static function query_top_viewed_post_ids_for_term(int $term_id, string $lang, int $limit): array {
+        $args = [
+            'post_type'           => 'post',
+            'post_status'         => 'publish',
+            'tag__in'             => [$term_id],
+            'meta_key'            => 'views',
+            'orderby'             => 'meta_value_num',
+            'order'               => 'DESC',
+            'posts_per_page'      => $limit,
             'fields'              => 'ids',
             'ignore_sticky_posts' => true,
             'no_found_rows'       => true,
@@ -268,7 +287,8 @@ class MV_Geo_Data_Builder {
     }
 
     private static function build_place_node_generic(string $type, string $label, int $term_id, array $post_ids, string $lang, ?string $map_shape_id, ?string $parent = null): array {
-        $url = get_term_link($term_id, 'post_tag');
+        $url       = get_term_link($term_id, 'post_tag');
+        $top_views = self::query_top_viewed_post_ids_for_term($term_id, $lang, self::TOP_POSTS_LIMIT);
 
         $node = [
             'type'         => $type,
@@ -277,7 +297,7 @@ class MV_Geo_Data_Builder {
             'url'          => is_wp_error($url) ? mv_geo_explorer_lang_fallback_url($lang) : $url,
             'map_shape_id' => $map_shape_id,
             'drilldown'    => false,
-            'top_posts'    => self::posts_to_top_posts(array_slice($post_ids, 0, self::TOP_POSTS_LIMIT)),
+            'top_posts'    => self::posts_to_top_posts($top_views),
         ];
         if (null !== $parent) {
             $node['parent'] = $parent;

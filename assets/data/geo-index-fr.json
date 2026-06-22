@@ -10,6 +10,14 @@
     "PRT": "portugal",
     "GRC": "grece"
   },
+  "world_shape_map": {
+    "FRA": "france",
+    "ITA": "italie",
+    "ESP": "espagne",
+    "GBR": "royaume-uni",
+    "PRT": "portugal",
+    "GRC": "grece"
+  },
   "drilldowns": {
     "france": {
       "geo_file": "regions-france.simple.geojson",

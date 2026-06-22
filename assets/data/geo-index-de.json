@@ -8,6 +8,12 @@
     "ITA": "italien",
     "GRC": "griechenland"
   },
+  "world_shape_map": {
+    "ESP": "spanien",
+    "GBR": "vereinigtes-konigreich",
+    "ITA": "italien",
+    "GRC": "griechenland"
+  },
   "places": {
     "spanien": {
       "type": "country",
