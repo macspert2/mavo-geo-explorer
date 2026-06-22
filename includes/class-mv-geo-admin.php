@@ -74,6 +74,7 @@ class MV_Geo_Admin {
             ['show_list', '1, 0', '1', __('Show the accessible destination list below the map.', 'mv-geo-explorer')],
             ['show_counts', '1, 0', '1', __('Show the post count: next to each destination in the list, in the side panel when a place is selected, and in the hover tooltip.', 'mv-geo-explorer')],
             ['show_posts', '1, 0', '1', __('Show the "top articles" list in the side panel when a place is selected.', 'mv-geo-explorer')],
+            ['show_drilldown', '1, 0', '1', __('Allow zooming into a country\'s regions (France/UK/Italy/Spain). When "0", those countries are not shaded differently, show no "view regions" button, and a second click no longer drills in — used to keep EN/DE simpler while FR keeps it.', 'mv-geo-explorer')],
             ['max_posts', '1–10', '3', __('How many top articles to show per place in the side panel.', 'mv-geo-explorer')],
             ['theme', 'default, minimal', 'default', __('"minimal" drops the panel/map background and border for a more stripped-down look.', 'mv-geo-explorer')],
         ];

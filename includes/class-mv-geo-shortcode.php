@@ -17,13 +17,14 @@ class MV_Geo_Shortcode {
     public static function render($atts): string {
         $atts = shortcode_atts(
             [
-                'lang'         => 'current',
-                'default_view' => 'europe',
-                'show_list'    => '1',
-                'show_counts'  => '1',
-                'show_posts'   => '1',
-                'max_posts'    => '3',
-                'theme'        => 'default',
+                'lang'           => 'current',
+                'default_view'   => 'europe',
+                'show_list'      => '1',
+                'show_counts'    => '1',
+                'show_posts'     => '1',
+                'show_drilldown' => '1',
+                'max_posts'      => '3',
+                'theme'          => 'default',
             ],
             $atts,
             'mv_geo_explorer'
@@ -59,19 +60,20 @@ class MV_Geo_Shortcode {
         $strings = mv_geo_explorer_ui_strings()[$lang] ?? mv_geo_explorer_ui_strings()['fr'];
 
         $config = [
-            'lang'         => $lang,
-            'defaultView'  => $default_view,
-            'showList'     => (bool) absint($atts['show_list']),
-            'showCounts'   => (bool) absint($atts['show_counts']),
-            'showPosts'    => (bool) absint($atts['show_posts']),
-            'maxPosts'     => $max_posts,
-            'theme'        => $theme,
-            'indexUrl'     => self::index_url($lang),
-            'geoUrl'       => add_query_arg('ver', MV_GEO_EXPLORER_VERSION, MV_GEO_EXPLORER_URL . 'assets/geo/europe-countries.simple.geojson'),
-            'worldGeoUrl'  => add_query_arg('ver', MV_GEO_EXPLORER_VERSION, MV_GEO_EXPLORER_URL . 'assets/geo/world-countries.simple.geojson'),
-            'geoBaseUrl'   => MV_GEO_EXPLORER_URL . 'assets/geo/',
-            'assetVersion' => MV_GEO_EXPLORER_VERSION,
-            'strings'      => $strings,
+            'lang'          => $lang,
+            'defaultView'   => $default_view,
+            'showList'      => (bool) absint($atts['show_list']),
+            'showCounts'    => (bool) absint($atts['show_counts']),
+            'showPosts'     => (bool) absint($atts['show_posts']),
+            'showDrilldown' => (bool) absint($atts['show_drilldown']),
+            'maxPosts'      => $max_posts,
+            'theme'         => $theme,
+            'indexUrl'      => self::index_url($lang),
+            'geoUrl'        => add_query_arg('ver', MV_GEO_EXPLORER_VERSION, MV_GEO_EXPLORER_URL . 'assets/geo/europe-countries.simple.geojson'),
+            'worldGeoUrl'   => add_query_arg('ver', MV_GEO_EXPLORER_VERSION, MV_GEO_EXPLORER_URL . 'assets/geo/world-countries.simple.geojson'),
+            'geoBaseUrl'    => MV_GEO_EXPLORER_URL . 'assets/geo/',
+            'assetVersion'  => MV_GEO_EXPLORER_VERSION,
+            'strings'       => $strings,
         ];
 
         ob_start();

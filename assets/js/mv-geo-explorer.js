@@ -149,7 +149,7 @@
 				this.panelEl.appendChild(this.el('p', 'mv-geo-explorer__panel-count', this.countLabel(place.post_count)));
 			}
 
-			if (place.drilldown && this.index.drilldowns && this.index.drilldowns[slug]) {
+			if (this.canDrillInto(slug)) {
 				const drillBtn = document.createElement('button');
 				drillBtn.type = 'button';
 				drillBtn.className = 'mv-geo-explorer__panel-drill';
@@ -263,12 +263,9 @@
 		 * a shortcut for the panel's "view regions" button.
 		 */
 		selectOrDrill(slug) {
-			if (slug && slug === this.selected) {
-				const place = this.placeFor(slug);
-				if (place && place.drilldown && this.index.drilldowns && this.index.drilldowns[slug]) {
-					this.drillInto(slug);
-					return;
-				}
+			if (slug && slug === this.selected && this.canDrillInto(slug)) {
+				this.drillInto(slug);
+				return;
 			}
 			this.selectPlace(slug);
 		}
@@ -288,11 +285,25 @@
 		// Drill-down (Europe ⇄ a country's regions)
 		// -------------------------------------------------------------
 
+		/**
+		 * True when `slug` both has region data AND the shortcode instance
+		 * allows drilling at all (`show_drilldown="0"` disables this site-wide
+		 * for the instance — e.g. used on EN/DE pages where the region maps
+		 * aren't wanted yet).
+		 */
+		canDrillInto(slug) {
+			if (!this.config.showDrilldown) {
+				return false;
+			}
+			const place = this.placeFor(slug);
+			return Boolean(place && place.drilldown && this.index.drilldowns && this.index.drilldowns[slug]);
+		}
+
 		async drillInto(countrySlug) {
-			const drilldown = this.index && this.index.drilldowns && this.index.drilldowns[countrySlug];
-			if (!drilldown) {
+			if (!this.canDrillInto(countrySlug)) {
 				return;
 			}
+			const drilldown = this.index.drilldowns[countrySlug];
 
 			if (!this.drillGeoCache[countrySlug]) {
 				try {
@@ -426,7 +437,6 @@
 
 		shapeClass(d) {
 			const slug = this.slugFor(d);
-			const place = this.placeFor(slug);
 			const isHovered = Boolean(slug) && slug === this.hovered;
 			const isSelected = Boolean(slug) && slug === this.selected;
 
@@ -434,8 +444,11 @@
 			classes.push(this.hasPosts(d) ? 'mv-geo-shape--has-posts' : 'mv-geo-shape--empty');
 			// Drilldown-capable countries get a slightly darker resting shade so
 			// they stand out as "explore further" — hover/selected still take
-			// over the fill entirely, same as any other country.
-			if (place && place.drilldown && !isHovered && !isSelected) {
+			// over the fill entirely, same as any other country. Hidden
+			// entirely when show_drilldown="0" (canDrillInto() checks that),
+			// since the shade would otherwise advertise a feature that's
+			// disabled for this shortcode instance.
+			if (!isHovered && !isSelected && this.canDrillInto(slug)) {
 				classes.push('mv-geo-shape--drilldown');
 			}
 			if (isHovered) {
