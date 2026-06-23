@@ -70,7 +70,8 @@ class MV_Geo_Admin {
 
         $rows = [
             ['lang', 'current, fr, en, de', 'current', __('Which language\'s index/UI strings to show. "current" follows Polylang\'s current language.', 'mv-geo-explorer')],
-            ['default_view', 'europe', 'europe', __('Initial map view. "World" is still reachable from the map itself via the "View the whole world" link — there is no attribute yet to start a shortcode instance zoomed out to World.', 'mv-geo-explorer')],
+            ['default_view', 'europe, world, regions', 'europe', __('Initial map view. "regions" starts pre-drilled into one country\'s regions — set default_region to an ISO country code (e.g. "fr"). Falls back to "europe" if default_region is missing/unresolvable, or if that country has no region data for the current language.', 'mv-geo-explorer')],
+            ['default_region', 'fr, gb, it, es, …', '', __('ISO alpha-2 country code to start drilled into, only used when default_view="regions".', 'mv-geo-explorer')],
             ['show_list', '1, 0', '1', __('Show the accessible destination list below the map.', 'mv-geo-explorer')],
             ['show_counts', '1, 0', '1', __('Show the post count: next to each destination in the list, in the side panel when a place is selected, and in the hover tooltip.', 'mv-geo-explorer')],
             ['show_posts', '1, 0', '1', __('Show the "top articles" list in the side panel when a place is selected.', 'mv-geo-explorer')],

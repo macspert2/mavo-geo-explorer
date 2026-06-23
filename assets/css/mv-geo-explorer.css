@@ -383,6 +383,16 @@
 	font-size: 0.875rem;
 }
 
+.mv-geo-explorer__noscript h2 {
+	font-size: 1rem;
+	margin: 0.75em 0 0.5em;
+}
+
+.mv-geo-explorer__noscript ul {
+	margin: 0;
+	padding-left: 1.25em;
+}
+
 /* Minimal theme ----------------------------------------------------------- */
 
 .mv-geo-explorer--theme-minimal .mv-geo-explorer__panel {

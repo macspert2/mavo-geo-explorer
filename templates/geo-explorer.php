@@ -3,10 +3,12 @@
  * Shortcode root markup. The map/panel/list are populated by JS from the
  * geo index JSON — this only renders the empty shell plus a no-JS fallback.
  *
- * @var array  $config
- * @var string $instance_id
- * @var string $theme
- * @var array  $strings
+ * @var array      $config
+ * @var string     $instance_id
+ * @var string     $theme
+ * @var array      $strings
+ * @var array|null $index Decoded geo-index JSON, passed through to the no-JS
+ *                         fallback included below (see MV_Geo_Shortcode::render()).
  */
 
 defined('ABSPATH') || exit;

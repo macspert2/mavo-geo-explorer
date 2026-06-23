@@ -19,6 +19,7 @@ class MV_Geo_Shortcode {
             [
                 'lang'           => 'current',
                 'default_view'   => 'europe',
+                'default_region' => '',
                 'show_list'      => '1',
                 'show_counts'    => '1',
                 'show_posts'     => '1',
@@ -39,10 +40,25 @@ class MV_Geo_Shortcode {
             $lang = mv_geo_explorer_current_lang();
         }
 
-        // 'world' isn't implemented yet (Section 1.3 of the plan) — 'europe'
-        // is the only supported view regardless of what was requested, so the
-        // map never ends up blank.
-        $default_view = 'europe';
+        $default_view = sanitize_key($atts['default_view']);
+        if (!in_array($default_view, ['europe', 'world', 'regions'], true)) {
+            $default_view = 'europe';
+        }
+
+        // default_region is an ISO alpha-2 country code (e.g. "fr"), resolved
+        // here to the alpha-3 id used as a map shape's id — the frontend
+        // looks up which place/slug that belongs to in the loaded index for
+        // the current language, since slugs themselves are language-specific
+        // and not knowable at shortcode-render time. Falls back to "europe"
+        // rather than starting a "regions" view with nothing to drill into.
+        $default_region_shape_id = null;
+        if ('regions' === $default_view) {
+            $region_code             = sanitize_key($atts['default_region']);
+            $default_region_shape_id = mv_geo_explorer_alpha2_to_alpha3()[$region_code] ?? null;
+            if (null === $default_region_shape_id) {
+                $default_view = 'europe';
+            }
+        }
 
         $theme = sanitize_key($atts['theme']);
         if (!in_array($theme, ['default', 'minimal'], true)) {
@@ -60,21 +76,30 @@ class MV_Geo_Shortcode {
         $strings = mv_geo_explorer_ui_strings()[$lang] ?? mv_geo_explorer_ui_strings()['fr'];
 
         $config = [
-            'lang'          => $lang,
-            'defaultView'   => $default_view,
-            'showList'      => (bool) absint($atts['show_list']),
-            'showCounts'    => (bool) absint($atts['show_counts']),
-            'showPosts'     => (bool) absint($atts['show_posts']),
-            'showDrilldown' => (bool) absint($atts['show_drilldown']),
-            'maxPosts'      => $max_posts,
-            'theme'         => $theme,
-            'indexUrl'      => self::index_url($lang),
-            'geoUrl'        => add_query_arg('ver', MV_GEO_EXPLORER_VERSION, MV_GEO_EXPLORER_URL . 'assets/geo/europe-countries.simple.geojson'),
-            'worldGeoUrl'   => add_query_arg('ver', MV_GEO_EXPLORER_VERSION, MV_GEO_EXPLORER_URL . 'assets/geo/world-countries.simple.geojson'),
-            'geoBaseUrl'    => MV_GEO_EXPLORER_URL . 'assets/geo/',
-            'assetVersion'  => MV_GEO_EXPLORER_VERSION,
-            'strings'       => $strings,
+            'lang'                 => $lang,
+            'defaultView'          => $default_view,
+            'defaultRegionShapeId' => $default_region_shape_id,
+            'showList'             => (bool) absint($atts['show_list']),
+            'showCounts'           => (bool) absint($atts['show_counts']),
+            'showPosts'            => (bool) absint($atts['show_posts']),
+            'showDrilldown'        => (bool) absint($atts['show_drilldown']),
+            'maxPosts'             => $max_posts,
+            'theme'                => $theme,
+            'indexUrl'             => self::index_url($lang),
+            'geoUrl'               => add_query_arg('ver', MV_GEO_EXPLORER_VERSION, MV_GEO_EXPLORER_URL . 'assets/geo/europe-countries.simple.geojson'),
+            'worldGeoUrl'          => add_query_arg('ver', MV_GEO_EXPLORER_VERSION, MV_GEO_EXPLORER_URL . 'assets/geo/world-countries.simple.geojson'),
+            'geoBaseUrl'           => MV_GEO_EXPLORER_URL . 'assets/geo/',
+            'assetVersion'         => MV_GEO_EXPLORER_VERSION,
+            'strings'              => $strings,
         ];
+
+        // Loaded once here (rather than inside the template) so the no-JS
+        // fallback list — which has no JS to fetch+render the index
+        // client-side — can build real, crawlable links from the exact same
+        // data the interactive map uses. Local vars defined here are visible
+        // inside both nested includes below (PHP `include` runs in the
+        // including scope).
+        $index = mv_geo_explorer_load_index_data($lang);
 
         ob_start();
         include MV_GEO_EXPLORER_DIR . 'templates/geo-explorer.php';

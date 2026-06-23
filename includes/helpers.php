@@ -54,6 +54,91 @@ function mv_geo_explorer_index_path(string $lang): string {
 }
 
 /**
+ * Same generated-index-or-bundled-fixture fallback as
+ * MV_Geo_Shortcode::index_url(), but returns the decoded data itself rather
+ * than a URL — used server-side by the no-JS fallback list, which has no JS
+ * to fetch+render the index client-side.
+ */
+function mv_geo_explorer_load_index_data(string $lang): ?array {
+    $path = mv_geo_explorer_index_path($lang);
+    if (!file_exists($path)) {
+        $path = MV_GEO_EXPLORER_DIR . 'assets/data/geo-index-' . $lang . '.json';
+    }
+    if (!file_exists($path)) {
+        return null;
+    }
+    $json = file_get_contents($path);
+    if (false === $json) {
+        return null;
+    }
+    $data = json_decode($json, true);
+    return is_array($data) ? $data : null;
+}
+
+/**
+ * Resolves which places the no-JS fallback list should show for a given
+ * shortcode instance, mirroring the same view-dependent scoping/ordering
+ * `renderList()` in mv-geo-explorer.js uses — kept as a plain array
+ * transform (no WP dependency) so it's testable standalone. Unlike the
+ * interactive World list, the no-JS World list includes Europe's countries
+ * individually (there's no map to "merge" them into a single Europe shape
+ * here, so a flat link-per-country list is more useful for both crawlers
+ * and real no-JS visitors).
+ *
+ * @param array       $index           Decoded geo-index JSON for one language.
+ * @param string      $view            'europe' | 'world' | 'regions'.
+ * @param string|null $region_shape_id Alpha-3 code to drill into, only used when $view === 'regions'.
+ * @return array{heading_label: ?string, places: array} `heading_label` is the
+ *         drilled-into country's own label for a successfully-resolved
+ *         'regions' case, null otherwise (caller picks the right europe/world
+ *         heading string itself).
+ */
+function mv_geo_explorer_nojs_places(array $index, string $view, ?string $region_shape_id): array {
+    $places    = is_array($index['places'] ?? null) ? $index['places'] : [];
+    $shape_map = is_array($index['shape_map'] ?? null) ? $index['shape_map'] : [];
+
+    if ('regions' === $view && $region_shape_id) {
+        $country_slug = null;
+        foreach ($places as $slug => $place) {
+            if (($place['map_shape_id'] ?? null) === $region_shape_id) {
+                $country_slug = $slug;
+                break;
+            }
+        }
+        if (null !== $country_slug) {
+            $regions = array_values(array_filter(
+                $places,
+                static fn($p) => ($p['parent'] ?? null) === $country_slug && ($p['post_count'] ?? 0) > 0
+            ));
+            if (!empty($regions)) {
+                usort($regions, static fn($a, $b) => $b['post_count'] <=> $a['post_count']);
+                return ['heading_label' => $places[$country_slug]['label'] ?? null, 'places' => $regions];
+            }
+        }
+        // Falls through to the Europe/World list below if nothing resolved
+        // (e.g. this language has no region data backfilled yet) rather than
+        // showing an empty list.
+    }
+
+    $top_level = array_values(array_filter(
+        $places,
+        static fn($p) => empty($p['parent']) && ($p['post_count'] ?? 0) > 0
+    ));
+
+    if ('world' === $view) {
+        usort($top_level, static fn($a, $b) => strnatcasecmp($a['label'] ?? '', $b['label'] ?? ''));
+        return ['heading_label' => null, 'places' => $top_level];
+    }
+
+    $europe_only = array_values(array_filter(
+        $top_level,
+        static fn($p) => array_key_exists($p['map_shape_id'] ?? '', $shape_map)
+    ));
+    usort($europe_only, static fn($a, $b) => $b['post_count'] <=> $a['post_count']);
+    return ['heading_label' => null, 'places' => $europe_only];
+}
+
+/**
  * Checks whether a given (unprefixed) table name exists, cached per request
  * since it's queried on every shortcode render and every rebuild.
  */

@@ -32,8 +32,11 @@
 			this.drillSlug = null;
 			this.drillGeoCache = {};
 
-			// Zoom state: 'europe' (default) or 'world'.
-			this.baseView = 'europe';
+			// Zoom state: 'europe' (default) or 'world'. config.defaultView
+			// can also be 'regions' (start pre-drilled into one country) — that
+			// doesn't change the *backing* baseView, just sets drillSlug once
+			// the index is loaded (see resolveDefaultRegionSlug()).
+			this.baseView = config.defaultView === 'world' ? 'world' : 'europe';
 			this.worldGeojson = null;
 
 			this._onResize = this.debounce(() => this.render(), 150);
@@ -55,12 +58,37 @@
 			}
 
 			try {
-				await this.loadGeoJson(this.config.defaultView);
-				this.render();
+				const startDrillSlug = this.resolveDefaultRegionSlug();
+				if (startDrillSlug) {
+					await this.drillInto(startDrillSlug);
+				} else {
+					await this.loadGeoJson(this.baseView);
+					this.render();
+				}
 				window.addEventListener('resize', this._onResize);
 			} catch (err) {
 				this.showMapError();
 			}
+		}
+
+		/**
+		 * default_view="regions" passes the target country through as an
+		 * alpha-3 shape id (config.defaultRegionShapeId) rather than a slug —
+		 * slugs are language-specific and not knowable server-side at
+		 * shortcode-render time. Resolves it against the now-loaded index;
+		 * returns null (silently falling back to the default Europe/World
+		 * view) if it doesn't resolve to anything drillable in this
+		 * language, e.g. a language whose region data hasn't been
+		 * backfilled yet, mirroring canDrillInto()'s own graceful checks.
+		 */
+		resolveDefaultRegionSlug() {
+			if (this.config.defaultView !== 'regions' || !this.config.defaultRegionShapeId || !this.index) {
+				return null;
+			}
+			const slug = Object.keys(this.index.places).find(
+				(key) => this.index.places[key].map_shape_id === this.config.defaultRegionShapeId
+			);
+			return slug && this.canDrillInto(slug) ? slug : null;
 		}
 
 		async loadIndex() {
@@ -71,7 +99,24 @@
 			this.index = await res.json();
 		}
 
+		/**
+		 * Loads (and caches) one of the two top-level geometry files. 'world'
+		 * is cached on this.worldGeojson since zoomToWorld() may call this
+		 * repeatedly as the visitor toggles views; 'europe' is only ever
+		 * loaded once, at init().
+		 */
 		async loadGeoJson(view) {
+			if (view === 'world') {
+				if (this.worldGeojson) {
+					return;
+				}
+				const res = await fetch(this.config.worldGeoUrl, { credentials: 'omit' });
+				if (!res.ok) {
+					throw new Error('mv-geo-explorer: failed to load world geojson (' + res.status + ')');
+				}
+				this.worldGeojson = await res.json();
+				return;
+			}
 			const res = await fetch(this.config.geoUrl, { credentials: 'omit' });
 			if (!res.ok) {
 				throw new Error('mv-geo-explorer: failed to load geojson (' + res.status + ')');
@@ -490,16 +535,10 @@
 			if (this.baseView === 'world') {
 				return;
 			}
-			if (!this.worldGeojson) {
-				try {
-					const res = await fetch(this.config.worldGeoUrl, { credentials: 'omit' });
-					if (!res.ok) {
-						throw new Error('mv-geo-explorer: failed to load world geojson (' + res.status + ')');
-					}
-					this.worldGeojson = await res.json();
-				} catch (err) {
-					return;
-				}
+			try {
+				await this.loadGeoJson('world');
+			} catch (err) {
+				return;
 			}
 			this.baseView = 'world';
 			this.drillSlug = null;
