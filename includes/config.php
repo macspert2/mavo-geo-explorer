@@ -368,6 +368,7 @@ function mv_geo_explorer_ui_strings(): array {
             'view_world'       => 'Voir le monde entier',
             'back_to_world'    => 'Retour au monde',
             'list_heading_world' => 'Toutes nos destinations dans le monde',
+            'not_on_map'       => 'Non représenté sur la carte (trop éloigné)',
         ],
         'en' => [
             'loading'          => 'Loading the map…',
@@ -385,6 +386,7 @@ function mv_geo_explorer_ui_strings(): array {
             'view_world'       => 'View the whole world',
             'back_to_world'    => 'Back to the world',
             'list_heading_world' => 'All our destinations worldwide',
+            'not_on_map'       => 'Not shown on the map (too far away)',
         ],
         'de' => [
             'loading'          => 'Karte wird geladen…',
@@ -402,6 +404,7 @@ function mv_geo_explorer_ui_strings(): array {
             'view_world'       => 'Die ganze Welt ansehen',
             'back_to_world'    => 'Zurück zur Welt',
             'list_heading_world' => 'Alle unsere Reiseziele weltweit',
+            'not_on_map'       => 'Nicht auf der Karte dargestellt (zu weit entfernt)',
         ],
     ];
 }

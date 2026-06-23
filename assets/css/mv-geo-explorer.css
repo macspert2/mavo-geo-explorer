@@ -317,6 +317,20 @@
 	text-decoration: underline;
 }
 
+/* Flags a list link whose place has no shape on the current map (e.g.
+   Canarias for Spain) — the link itself still works, this just signals
+   "don't expect a hover/highlight on the map for this one". Declared before
+   --selected below so selection's accent color still wins on the (rare) case
+   a user selects an off-map place — only `color` actually conflicts between
+   the two, italic/dotted-underline are unaffected either way. */
+.mv-geo-explorer__list-link--off-map {
+	font-style: italic;
+	color: var(--mv-geo-muted);
+	text-decoration: underline dotted;
+	text-decoration-color: currentColor;
+	cursor: help;
+}
+
 /* A first click previews (see the panel's own "view articles" button for
    the explicit way to go further); this marks which link that was, and
    doubles as a hint that activating it again behaves differently — a

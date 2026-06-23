@@ -244,6 +244,8 @@
 				this.listHeadingEl.textContent = heading;
 			}
 
+			const shapeMap = this.activeShapeMap();
+
 			this.listItemsEl.innerHTML = '';
 			places.forEach((place) => {
 				const li = document.createElement('li');
@@ -258,6 +260,17 @@
 				link.addEventListener('focus', () => this.setHover(place.slug));
 				link.addEventListener('blur', () => this.clearHover());
 				link.addEventListener('click', (event) => this.handleListLinkClick(place.slug, event));
+
+				// Some places (e.g. Canarias for Spain, same reasoning as
+				// Russia on the Europe map) deliberately have no shape in the
+				// current view's geometry — too far away to fit without
+				// zooming the whole map out. Still a real, working link; just
+				// flagged so hovering/selecting it doesn't look broken when
+				// nothing highlights on the map.
+				if (!place.map_shape_id || shapeMap[place.map_shape_id] !== place.slug) {
+					link.classList.add('mv-geo-explorer__list-link--off-map');
+					link.title = this.config.strings.not_on_map;
+				}
 
 				li.appendChild(link);
 				if (this.config.showCounts) {
