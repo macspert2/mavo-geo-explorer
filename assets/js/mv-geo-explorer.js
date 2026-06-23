@@ -270,7 +270,16 @@
 					// (they belong in the World list instead).
 					return Object.prototype.hasOwnProperty.call(self.index.shape_map, place.map_shape_id);
 				})
-				.sort((a, b) => b.post_count - a.post_count);
+				.sort((a, b) => {
+					// World's country list reads better alphabetically (it's a
+					// long, otherwise-unordered list of everywhere-but-Europe);
+					// Europe's and any drilldown's region list stay ranked by
+					// post_count as before.
+					if (self.baseView === 'world' && !drillSlug) {
+						return a.label.localeCompare(b.label, self.config.lang);
+					}
+					return b.post_count - a.post_count;
+				});
 
 			if (this.listHeadingEl) {
 				const current = drillSlug && this.placeFor(drillSlug);
