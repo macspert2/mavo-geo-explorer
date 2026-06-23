@@ -93,13 +93,21 @@ class MV_Geo_Shortcode {
             'strings'              => $strings,
         ];
 
-        // Loaded once here (rather than inside the template) so the no-JS
-        // fallback list — which has no JS to fetch+render the index
+        // Computed once here (rather than inside either template) so the
+        // no-JS fallback list — which has no JS to fetch+render the index
         // client-side — can build real, crawlable links from the exact same
-        // data the interactive map uses. Local vars defined here are visible
-        // inside both nested includes below (PHP `include` runs in the
-        // including scope).
-        $index = mv_geo_explorer_load_index_data($lang);
+        // data the interactive map uses, and so the *always-rendered* list
+        // heading (filled in by JS once it loads, but visible as static
+        // markup until then) shows the right text for this instance's view
+        // instead of unconditionally the Europe one. Local vars defined here
+        // are visible inside both nested includes below (PHP `include` runs
+        // in the including scope).
+        $index       = mv_geo_explorer_load_index_data($lang);
+        $nojs_places = is_array($index)
+            ? mv_geo_explorer_nojs_places($index, $default_view, $default_region_shape_id)
+            : ['heading_label' => null, 'places' => []];
+        $list_heading = $nojs_places['heading_label']
+            ?? (('world' === $default_view) ? $strings['list_heading_world'] : $strings['list_heading']);
 
         ob_start();
         include MV_GEO_EXPLORER_DIR . 'templates/geo-explorer.php';

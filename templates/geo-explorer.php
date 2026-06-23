@@ -3,12 +3,16 @@
  * Shortcode root markup. The map/panel/list are populated by JS from the
  * geo index JSON — this only renders the empty shell plus a no-JS fallback.
  *
- * @var array      $config
- * @var string     $instance_id
- * @var string     $theme
- * @var array      $strings
- * @var array|null $index Decoded geo-index JSON, passed through to the no-JS
- *                         fallback included below (see MV_Geo_Shortcode::render()).
+ * @var array  $config
+ * @var string $instance_id
+ * @var string $theme
+ * @var array  $strings
+ * @var array  $nojs_places  {heading_label: ?string, places: array} — see
+ *             MV_Geo_Shortcode::render(); passed through to the no-JS list
+ *             included at the end.
+ * @var string $list_heading Precomputed in MV_Geo_Shortcode::render() from
+ *             $nojs_places — shown below until JS overwrites it (or
+ *             permanently, with no JS and show_list="0", via no-js-list.php).
  */
 
 defined('ABSPATH') || exit;
@@ -32,7 +36,7 @@ defined('ABSPATH') || exit;
     </div>
     <?php if (!empty($config['showList'])) : ?>
         <div class="mv-geo-explorer__list">
-            <h2 class="mv-geo-explorer__list-heading"><?php echo esc_html($strings['list_heading']); ?></h2>
+            <h2 class="mv-geo-explorer__list-heading"><?php echo esc_html($list_heading); ?></h2>
             <ul class="mv-geo-explorer__list-items"></ul>
         </div>
     <?php endif; ?>

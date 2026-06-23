@@ -10,14 +10,21 @@
  * one shape) for default_view="world", or one country's regions for
  * default_view="regions".
  *
- * @var array      $config
- * @var array|null $index
+ * No heading of its own when show_list is on: the always-rendered
+ * `.mv-geo-explorer__list-heading` above (see geo-explorer.php) already
+ * shows the same $list_heading text, so a second one here would just
+ * duplicate it for a no-JS visitor. Only rendered when show_list="0", since
+ * crawler/no-JS discoverability shouldn't depend on a display toggle meant
+ * for the JS-rendered UI.
+ *
+ * @var array  $config
+ * @var array  $nojs_places
+ * @var string $list_heading
  */
 
 defined('ABSPATH') || exit;
 
-$lang    = $config['lang'] ?? 'fr';
-$strings = $config['strings'] ?? mv_geo_explorer_ui_strings()[$lang] ?? mv_geo_explorer_ui_strings()['fr'];
+$lang = $config['lang'] ?? 'fr';
 
 $intro_text = [
     'fr' => 'La carte interactive nécessite JavaScript. Voici toutes nos destinations :',
@@ -25,24 +32,15 @@ $intro_text = [
     'de' => 'Die interaktive Karte benötigt JavaScript. Hier sind alle unsere Reiseziele:',
 ];
 
-$places  = [];
-$heading = null;
-
-if (is_array($index)) {
-    $resolved = mv_geo_explorer_nojs_places($index, $config['defaultView'] ?? 'europe', $config['defaultRegionShapeId'] ?? null);
-    $places   = $resolved['places'];
-    $heading  = $resolved['heading_label'];
-}
-
-if (null === $heading) {
-    $heading = ('world' === ($config['defaultView'] ?? 'europe')) ? $strings['list_heading_world'] : $strings['list_heading'];
-}
+$places = $nojs_places['places'] ?? [];
 ?>
 <noscript>
     <div class="mv-geo-explorer__noscript">
         <?php if (!empty($places)) : ?>
             <p><?php echo esc_html($intro_text[$lang] ?? $intro_text['fr']); ?></p>
-            <h2><?php echo esc_html($heading); ?></h2>
+            <?php if (empty($config['showList'])) : ?>
+                <h2><?php echo esc_html($list_heading); ?></h2>
+            <?php endif; ?>
             <ul>
                 <?php foreach ($places as $place) : ?>
                     <li><a href="<?php echo esc_url($place['url'] ?? '#'); ?>"><?php echo esc_html($place['label'] ?? ''); ?></a></li>
