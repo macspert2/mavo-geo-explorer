@@ -68,7 +68,10 @@
    resting shade so they read as "there's more to explore here" — only
    applied to the resting state; hover/selected below still take over the
    fill the same as any other country (source order matters: this rule
-   must come after --has-posts but before --hover/--selected). */
+   must come after --has-posts but before --hover/--selected). Reused as-is
+   for the World view's merged Europe shape (same "leads somewhere else on
+   a click" signal — its sheer size already makes it visually distinct from
+   an actual drilldown-capable country, no need for a third shade). */
 .mv-geo-shape--drilldown {
 	fill: var(--mv-geo-land-active-drilldown);
 }
@@ -349,6 +352,30 @@
 	color: var(--mv-geo-muted);
 	font-size: 0.875rem;
 	margin-left: 0.35em;
+}
+
+/* World view only: heading-level shortcut back to the Europe view, kept out
+   of the country list itself since "Europe" isn't one of these countries —
+   a single click navigates directly, no preview/second-click step. */
+.mv-geo-explorer__list-europe {
+	margin: 1em 0 0;
+	font-size: 1rem;
+}
+
+.mv-geo-explorer__list-europe-link {
+	background: none;
+	border: none;
+	padding: 0;
+	font: inherit;
+	font-weight: 700;
+	color: var(--mv-geo-text);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.mv-geo-explorer__list-europe-link::after {
+	content: ' →';
+	text-decoration: none;
 }
 
 .mv-geo-explorer__noscript {

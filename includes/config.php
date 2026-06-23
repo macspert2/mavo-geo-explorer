@@ -367,8 +367,10 @@ function mv_geo_explorer_ui_strings(): array {
             'back_to_europe'   => 'Retour à l’Europe',
             'view_world'       => 'Voir le monde entier',
             'back_to_world'    => 'Retour au monde',
-            'list_heading_world' => 'Toutes nos destinations dans le monde',
+            'list_heading_world' => 'Toutes nos destinations hors d’Europe',
             'not_on_map'       => 'Non représenté sur la carte (trop éloigné)',
+            'europe_label'     => 'Europe',
+            'view_europe'      => 'Voir l’Europe',
         ],
         'en' => [
             'loading'          => 'Loading the map…',
@@ -385,8 +387,10 @@ function mv_geo_explorer_ui_strings(): array {
             'back_to_europe'   => 'Back to Europe',
             'view_world'       => 'View the whole world',
             'back_to_world'    => 'Back to the world',
-            'list_heading_world' => 'All our destinations worldwide',
+            'list_heading_world' => 'All our destinations outside Europe',
             'not_on_map'       => 'Not shown on the map (too far away)',
+            'europe_label'     => 'Europe',
+            'view_europe'      => 'View Europe',
         ],
         'de' => [
             'loading'          => 'Karte wird geladen…',
@@ -403,8 +407,10 @@ function mv_geo_explorer_ui_strings(): array {
             'back_to_europe'   => 'Zurück zu Europa',
             'view_world'       => 'Die ganze Welt ansehen',
             'back_to_world'    => 'Zurück zur Welt',
-            'list_heading_world' => 'Alle unsere Reiseziele weltweit',
+            'list_heading_world' => 'Alle unsere Reiseziele außerhalb Europas',
             'not_on_map'       => 'Nicht auf der Karte dargestellt (zu weit entfernt)',
+            'europe_label'     => 'Europa',
+            'view_europe'      => 'Europa ansehen',
         ],
     ];
 }

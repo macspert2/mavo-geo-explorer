@@ -1,6 +1,15 @@
 (function () {
 	'use strict';
 
+	// Sentinel id/slug for the World view's merged "Europe" shape (built at
+	// asset-build time by unioning europe-countries.simple.geojson into one
+	// feature with this exact properties.id). Not a real place in the index
+	// — it has no term/url/post_count of its own, it's a navigation shortcut
+	// back to the Europe view, handled as a special case wherever a real
+	// place would normally be looked up.
+	const EUROPE_SHAPE_ID = 'EUROPE';
+	const EUROPE_SLUG = '__europe__';
+
 	class MVGeoExplorer {
 		constructor(root, config) {
 			this.root = root;
@@ -147,10 +156,28 @@
 		}
 
 		renderPanel(slug) {
-			const place = this.placeFor(slug);
 			const strings = this.config.strings;
 
 			this.panelEl.innerHTML = '';
+
+			// The merged Europe shape on the World map isn't a real place (no
+			// term/url/post_count) — it's a shortcut back to the Europe view,
+			// so its panel is just a heading + an explicit "View Europe"
+			// button (mirrors the drilldown "View regions" button below: a
+			// discoverable single click, with the map's own click-twice as a
+			// bonus shortcut for people who don't look at the panel).
+			if (slug === EUROPE_SLUG) {
+				this.panelEl.appendChild(this.el('h2', 'mv-geo-explorer__panel-title', strings.europe_label));
+				const europeBtn = document.createElement('button');
+				europeBtn.type = 'button';
+				europeBtn.className = 'mv-geo-explorer__panel-drill';
+				europeBtn.textContent = strings.view_europe;
+				europeBtn.addEventListener('click', () => this.zoomToEurope());
+				this.panelEl.appendChild(europeBtn);
+				return;
+			}
+
+			const place = this.placeFor(slug);
 
 			if (!place) {
 				this.panelEl.appendChild(this.el('h2', 'mv-geo-explorer__panel-title', strings.default_title));
@@ -229,7 +256,14 @@
 						return false; // a region/child place, not relevant at a top-level view
 					}
 					if (self.baseView === 'world') {
-						return true; // full worldwide country list
+						// World list excludes only countries already shown
+						// individually on the Europe map (they're represented by
+						// the single merged Europe shape/link instead). Anything
+						// not in Europe's curated set — including an overseas
+						// territory like Guadeloupe that the geotagger resolved
+						// as its own place distinct from mainland France — still
+						// shows here, with no special-casing needed.
+						return !Object.prototype.hasOwnProperty.call(self.index.shape_map, place.map_shape_id);
 					}
 					// Default Europe view: only countries actually shown on the Europe map —
 					// keeps countries-with-posts from other continents out of this list
@@ -280,6 +314,39 @@
 			});
 
 			this.updateListSelection();
+			this.renderListEuropeLink();
+		}
+
+		/**
+		 * World view only: a heading-level link below the country list that
+		 * goes straight to the Europe view in a single click — unlike every
+		 * other place link, there's no preview/second-click step, since
+		 * "Europe" isn't a single destination with its own panel content,
+		 * it's a whole different view of the map. Lazily creates the element
+		 * once and just toggles it after that, same pattern as the tooltip.
+		 */
+		renderListEuropeLink() {
+			if (!this.listItemsEl) {
+				return;
+			}
+			const show = this.baseView === 'world' && !this.drillSlug;
+			if (!this.listEuropeLinkEl) {
+				if (!show) {
+					return;
+				}
+				const heading = document.createElement('h3');
+				heading.className = 'mv-geo-explorer__list-europe';
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'mv-geo-explorer__list-europe-link';
+				button.addEventListener('click', () => this.zoomToEurope());
+				heading.appendChild(button);
+				this.listItemsEl.insertAdjacentElement('afterend', heading);
+				this.listEuropeLinkEl = heading;
+				this.listEuropeButtonEl = button;
+			}
+			this.listEuropeButtonEl.textContent = this.config.strings.europe_label;
+			this.listEuropeLinkEl.hidden = !show;
 		}
 
 		/**
@@ -330,12 +397,20 @@
 		/**
 		 * Clicking/activating a shape that's already selected drills into it
 		 * directly (if it supports drilldown) instead of just re-selecting it —
-		 * a shortcut for the panel's "view regions" button.
+		 * a shortcut for the panel's "view regions" button. The merged Europe
+		 * shape (World view) gets the same two-click shortcut, just leading to
+		 * the Europe view instead of a region drilldown.
 		 */
 		selectOrDrill(slug) {
-			if (slug && slug === this.selected && this.canDrillInto(slug)) {
-				this.drillInto(slug);
-				return;
+			if (slug && slug === this.selected) {
+				if (slug === EUROPE_SLUG) {
+					this.zoomToEurope();
+					return;
+				}
+				if (this.canDrillInto(slug)) {
+					this.drillInto(slug);
+					return;
+				}
 			}
 			this.selectPlace(slug);
 		}
@@ -518,7 +593,7 @@
 			// entirely when show_drilldown="0" (canDrillInto() checks that),
 			// since the shade would otherwise advertise a feature that's
 			// disabled for this shortcode instance.
-			if (!isHovered && !isSelected && this.canDrillInto(slug)) {
+			if (!isHovered && !isSelected && (this.canDrillInto(slug) || slug === EUROPE_SLUG)) {
 				classes.push('mv-geo-shape--drilldown');
 			}
 			if (isHovered) {
@@ -534,10 +609,19 @@
 			if (!this.index || !d || !d.properties) {
 				return null;
 			}
+			if (d.properties.id === EUROPE_SHAPE_ID) {
+				return EUROPE_SLUG;
+			}
 			return this.activeShapeMap()[d.properties.id] || null;
 		}
 
 		placeFor(slug) {
+			if (slug === EUROPE_SLUG) {
+				// Not a real place — no term/url/post_count, just a label to
+				// show in a tooltip/panel. hasPosts()/ariaLabel() special-case
+				// this slug separately rather than relying on post_count here.
+				return { type: 'continent', label: this.config.strings.europe_label, url: null };
+			}
 			if (!slug || !this.index) {
 				return null;
 			}
@@ -545,14 +629,21 @@
 		}
 
 		hasPosts(d) {
+			if (this.slugFor(d) === EUROPE_SLUG) {
+				return true; // always clickable — it's a navigation shortcut, not a destination with its own count
+			}
 			const place = this.placeFor(this.slugFor(d));
 			return Boolean(place && place.post_count > 0);
 		}
 
 		ariaLabel(d) {
-			const place = this.placeFor(this.slugFor(d));
+			const slug = this.slugFor(d);
+			const place = this.placeFor(slug);
 			if (!place) {
 				return '';
+			}
+			if (slug === EUROPE_SLUG) {
+				return place.label;
 			}
 			return place.label + ', ' + this.countLabel(place.post_count);
 		}
@@ -569,7 +660,8 @@
 				this.tooltipEl.className = 'mv-geo-explorer__tooltip';
 				this.mapWrap.appendChild(this.tooltipEl);
 			}
-			this.tooltipEl.textContent = this.config.showCounts ? place.label + ' — ' + this.countLabel(place.post_count) : place.label;
+			const hasCount = this.config.showCounts && typeof place.post_count === 'number';
+			this.tooltipEl.textContent = hasCount ? place.label + ' — ' + this.countLabel(place.post_count) : place.label;
 			this.tooltipEl.hidden = false;
 			this.moveTooltip(event);
 		}
