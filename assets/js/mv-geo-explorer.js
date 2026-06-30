@@ -244,8 +244,18 @@
 				this.panelEl.appendChild(drillBtn);
 			}
 
+			// When the panel already lists every article for this place
+			// (post_count <= maxPosts), the "Populaires :" subtitle and the
+			// "Tous les articles" CTA are redundant — the list isn't a
+			// selection of the most-read, it's all of them, and there's
+			// nothing more to see on the tag page. Show both only when there
+			// are more articles than fit in the panel.
+			const hasMore = place.post_count > this.config.maxPosts;
+
 			if (this.config.showPosts && Array.isArray(place.top_posts) && place.top_posts.length) {
-				this.panelEl.appendChild(this.el('p', 'mv-geo-explorer__panel-subheading', strings.top_articles));
+				if (hasMore) {
+					this.panelEl.appendChild(this.el('p', 'mv-geo-explorer__panel-subheading', strings.top_articles));
+				}
 				const list = document.createElement('ul');
 				list.className = 'mv-geo-explorer__panel-posts';
 				place.top_posts.slice(0, this.config.maxPosts).forEach((post) => {
@@ -254,11 +264,13 @@
 				this.panelEl.appendChild(list);
 			}
 
-			const link = document.createElement('a');
-			link.className = 'mv-geo-explorer__panel-cta';
-			link.href = place.url;
-			link.textContent = strings.view_articles;
-			this.panelEl.appendChild(link);
+			if (hasMore) {
+				const link = document.createElement('a');
+				link.className = 'mv-geo-explorer__panel-cta';
+				link.href = place.url;
+				link.textContent = strings.view_articles;
+				this.panelEl.appendChild(link);
+			}
 		}
 
 		renderPostItem(post) {
