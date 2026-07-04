@@ -290,6 +290,19 @@ class MV_Geo_Data_Builder {
         $url       = get_term_link($term_id, 'post_tag');
         $top_views = self::query_top_viewed_post_ids_for_term($term_id, $lang, self::TOP_POSTS_LIMIT);
 
+        // query_top_viewed_post_ids_for_term() joins on the `views` postmeta,
+        // so posts with no view data yet (e.g. everything in a brand-new
+        // country before mavo-stats has run) are absent from it entirely —
+        // which left the panel's article list empty even though post_count > 0
+        // marked the country green. Top up from $post_ids (all posts for the
+        // term, date DESC) so the newest posts still show, view-ranked ones
+        // first, until we hit the limit.
+        if (count($top_views) < self::TOP_POSTS_LIMIT) {
+            $needed    = self::TOP_POSTS_LIMIT - count($top_views);
+            $remaining = array_values(array_diff($post_ids, $top_views));
+            $top_views = array_merge($top_views, array_slice($remaining, 0, $needed));
+        }
+
         $node = [
             'type'         => $type,
             'label'        => $label,
