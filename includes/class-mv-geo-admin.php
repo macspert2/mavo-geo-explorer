@@ -127,7 +127,12 @@ class MV_Geo_Admin {
     }
 
     private function render_feedback_notice(array $results): void {
-        echo '<div class="notice notice-success"><p>';
+        // A failed write used to be reported inside a green "Rebuild complete"
+        // notice, which reads as success however the sentence ends.
+        $failed = (bool) array_filter( $results, static fn( $d ) => ! empty( $d['error'] ) );
+
+        printf( '<div class="notice notice-%s"><p>', $failed ? 'error' : 'success' );
+
         $parts = [];
         foreach ($results as $lang => $diagnostics) {
             if (!empty($diagnostics['error'])) {
@@ -143,7 +148,11 @@ class MV_Geo_Admin {
                 esc_html__('places generated', 'mv-geo-explorer')
             );
         }
-        echo esc_html__('Rebuild complete.', 'mv-geo-explorer') . ' ' . implode(' — ', $parts);
+        echo esc_html(
+            $failed
+                ? __('Rebuild failed.', 'mv-geo-explorer')
+                : __('Rebuild complete.', 'mv-geo-explorer')
+        ) . ' ' . implode(' — ', $parts);
         echo '</p></div>';
     }
 
@@ -218,6 +227,19 @@ class MV_Geo_Admin {
         $this->status_row(__('Unmatched', 'mv-geo-explorer'), (int) $diagnostics['unmatched']);
         $this->status_row(__('Places generated', 'mv-geo-explorer'), (int) $diagnostics['places_count']);
         $this->status_row(__('Generated file', 'mv-geo-explorer'), '<code>' . esc_html($diagnostics['file_path']) . '</code>');
+
+        // These figures are the stored record of the last run, shown on every
+        // visit rather than only after a rebuild — so a failed write has to be
+        // recorded here too, or the counts go on describing an index that was
+        // built in memory and never reached the disk.
+        if (!empty($diagnostics['error'])) {
+            $this->status_row(
+                __('Result', 'mv-geo-explorer'),
+                '<strong style="color:#b32d2e">' . esc_html__('Not written', 'mv-geo-explorer') . '</strong> — '
+                    . esc_html($diagnostics['error'])
+            );
+        }
+
         echo '</tbody></table>';
 
         if (!empty($diagnostics['unmatched_names'])) {

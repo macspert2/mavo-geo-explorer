@@ -175,7 +175,7 @@ class MV_Geo_Data_Builder {
             'places'          => $places,
         ];
 
-        $file_path = self::write_index($lang, $data);
+        $written = self::write_index($lang, $data);
 
         $diagnostics = [
             'lang'              => $lang,
@@ -187,8 +187,16 @@ class MV_Geo_Data_Builder {
             'unmatched'         => $unmatched,
             'unmatched_names'   => self::top_unmatched($unmatched_log),
             'places_count'      => count($places),
-            'file_path'         => $file_path,
+            'file_path'         => $written['path'],
         ];
+
+        // The work above all succeeded; only the file did not. Reported as an
+        // error so the admin notice and the stored diagnostics both say so —
+        // the counts stay in place, because they are still true of the index
+        // that was built, just not of anything on disk.
+        if (null !== $written['error']) {
+            $diagnostics['error'] = $written['error'];
+        }
 
         $options                            = mv_geo_explorer_options();
         $options['last_generated'][$lang]   = $diagnostics;
@@ -560,11 +568,48 @@ class MV_Geo_Data_Builder {
     // Output
     // -------------------------------------------------------------------
 
-    private static function write_index(string $lang, array $data): string {
-        $dir = mv_geo_explorer_uploads_dir();
-        wp_mkdir_p($dir);
+    /**
+     * Writes the index, and says so if it could not.
+     *
+     * Every return value here used to be discarded, so a directory that was
+     * not writable — a permissions change, a full disk, a hardened host —
+     * produced a cheerful "Rebuild complete" while nothing was written at all.
+     * The map then went on serving the previous index (or the bundled
+     * fixture), which is the same thing a rebuild that "didn't take" looks
+     * like, with nothing anywhere to explain it.
+     *
+     * @return array{path: string, error: ?string}
+     */
+    private static function write_index(string $lang, array $data): array {
+        $dir  = mv_geo_explorer_uploads_dir();
         $path = $dir . 'geo-index-' . $lang . '.json';
-        file_put_contents($path, wp_json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        return $path;
+
+        if (!wp_mkdir_p($dir)) {
+            return [
+                'path'  => $path,
+                /* translators: %s: directory path */
+                'error' => sprintf(__('could not create %s', 'mv-geo-explorer'), $dir),
+            ];
+        }
+
+        $json = wp_json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        if (false === $json) {
+            return [ 'path' => $path, 'error' => __('the index could not be encoded as JSON', 'mv-geo-explorer') ];
+        }
+
+        // Strict comparison against the byte count: file_put_contents returns
+        // the number written, and a partial write is a failure too.
+        $written = file_put_contents($path, $json);
+
+        if (strlen($json) !== $written) {
+            return [
+                'path'  => $path,
+                /* translators: %s: file path */
+                'error' => sprintf(__('could not write %s — check the directory is writable', 'mv-geo-explorer'), $path),
+            ];
+        }
+
+        return [ 'path' => $path, 'error' => null ];
     }
 }

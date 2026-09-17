@@ -31,11 +31,15 @@ class MV_Geo_Assets {
             true
         );
 
+        // d3 above keeps its own upstream version; this one is ours, so it
+        // gets the same mtime treatment as the stylesheet.
+        $js = MV_GEO_EXPLORER_DIR . 'assets/js/mv-geo-explorer.js';
+
         wp_register_script(
             'mv-geo-explorer',
             MV_GEO_EXPLORER_URL . 'assets/js/mv-geo-explorer.js',
             ['mv-d3'],
-            MV_GEO_EXPLORER_VERSION,
+            file_exists( $js ) ? filemtime( $js ) : MV_GEO_EXPLORER_VERSION,
             true
         );
     }

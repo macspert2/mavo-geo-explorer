@@ -60,19 +60,29 @@ function mv_geo_explorer_index_path(string $lang): string {
  * to fetch+render the index client-side.
  */
 function mv_geo_explorer_load_index_data(string $lang): ?array {
+    // Memoized per request: two [mv_geo_explorer] instances on one page would
+    // otherwise read and json_decode the whole index twice, and it carries
+    // every country with its top posts.
+    static $cache = [];
+
+    if (array_key_exists($lang, $cache)) {
+        return $cache[$lang];
+    }
+
     $path = mv_geo_explorer_index_path($lang);
     if (!file_exists($path)) {
         $path = MV_GEO_EXPLORER_DIR . 'assets/data/geo-index-' . $lang . '.json';
     }
     if (!file_exists($path)) {
-        return null;
+        return $cache[$lang] = null;
     }
     $json = file_get_contents($path);
     if (false === $json) {
-        return null;
+        return $cache[$lang] = null;
     }
     $data = json_decode($json, true);
-    return is_array($data) ? $data : null;
+
+    return $cache[$lang] = (is_array($data) ? $data : null);
 }
 
 /**
