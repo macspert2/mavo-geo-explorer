@@ -215,7 +215,7 @@
 				this.panelEl.appendChild(this.el('h2', 'mv-geo-explorer__panel-title', strings.europe_label));
 				const europeBtn = document.createElement('button');
 				europeBtn.type = 'button';
-				europeBtn.className = 'mv-geo-explorer__panel-drill';
+				europeBtn.className = 'mv-geo-explorer__panel-drill mv-button mv-button--secondary';
 				europeBtn.textContent = strings.view_europe;
 				europeBtn.addEventListener('click', () => this.zoomToEurope());
 				this.panelEl.appendChild(europeBtn);
@@ -238,7 +238,7 @@
 			if (this.canDrillInto(slug)) {
 				const drillBtn = document.createElement('button');
 				drillBtn.type = 'button';
-				drillBtn.className = 'mv-geo-explorer__panel-drill';
+				drillBtn.className = 'mv-geo-explorer__panel-drill mv-button mv-button--secondary';
 				drillBtn.textContent = strings.view_regions;
 				drillBtn.addEventListener('click', () => this.drillInto(slug));
 				this.panelEl.appendChild(drillBtn);
@@ -266,7 +266,9 @@
 
 			if (hasMore) {
 				const link = document.createElement('a');
-				link.className = 'mv-geo-explorer__panel-cta';
+				// mv-button classes: the theme (mavo26-child) owns the site's button
+				// shape, colours and press motion — see the CSS for the fallback.
+				link.className = 'mv-geo-explorer__panel-cta mv-button mv-button--primary';
 				link.href = place.url;
 				link.textContent = strings.view_articles;
 				this.panelEl.appendChild(link);
