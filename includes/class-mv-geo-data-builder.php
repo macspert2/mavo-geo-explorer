@@ -21,6 +21,23 @@ class MV_Geo_Data_Builder {
 
     private const TOP_POSTS_LIMIT = 5;
 
+    /**
+     * Post meta that ranks each place's top_posts, highest first.
+     *
+     * `rpp_score_evergreen` (0–1000) is written daily by recent-post-popularity
+     * (mavo-stats) ≥ 1.1.0: 60% the post's 12-month views percentile, 40% how
+     * consistently it drew readers month after month — computed per language.
+     * Chosen over `views` (rolling 90-day total) because a map panel should
+     * show a place's proven best articles, not whatever spiked this quarter,
+     * and because geo-index-{lang}.json is only rebuilt on demand from the
+     * admin screen: a slow-moving ranking stays meaningful between rebuilds.
+     *
+     * Was 'views' up to 1.10.4. Without recent-post-popularity the key is
+     * absent: the WP_Query below then returns nothing and the date-ordered
+     * top-up in build_place_node_generic() fills the list — newest first.
+     */
+    private const RANK_META_KEY = 'rpp_score_evergreen';
+
     public static function build_all(): array {
         $results = [];
         foreach (mv_geo_explorer_options()['enabled_languages'] as $lang) {
@@ -126,7 +143,7 @@ class MV_Geo_Data_Builder {
         foreach ($places as $slug => &$place) {
             if (!empty($place['_candidates'])) {
                 $needed              = max(0, self::TOP_POSTS_LIMIT - count($place['top_posts']));
-                $sorted_candidates   = self::sort_post_ids_by_views($place['_candidates']);
+                $sorted_candidates   = self::sort_post_ids_by_rank($place['_candidates']);
                 $place['top_posts'] = array_merge(
                     $place['top_posts'],
                     self::posts_to_top_posts(array_slice($sorted_candidates, 0, $needed))
@@ -221,7 +238,7 @@ class MV_Geo_Data_Builder {
     /**
      * Every post tagged with this term — used for post_count, so it must
      * never exclude a post just because it lacks view data. Order doesn't
-     * matter here (top_posts ranking comes from query_top_viewed_post_ids_for_term()
+     * matter here (top_posts ranking comes from query_top_ranked_post_ids_for_term()
      * instead); kept as date DESC for stable, predictable results.
      *
      * @return int[]
@@ -245,22 +262,24 @@ class MV_Geo_Data_Builder {
     }
 
     /**
-     * The `$limit` most-viewed posts for this term, per the `views`
-     * postmeta written by the mavo-stats plugin (a rolling ~90-day total,
-     * refreshed daily). A post with no `views` value yet (e.g. brand new)
-     * won't appear here — that's fine for a bounded top-N "most popular"
-     * list, just not appropriate for the full-count query above.
+     * The `$limit` top-ranked posts for this term, by RANK_META_KEY (see
+     * there). recent-post-popularity ≥ 1.1.0 seeds the key on publish, so
+     * a post is only missing here if that plugin isn't running — fine for a
+     * bounded top-N list (the caller tops up by date), just not appropriate
+     * for the full-count query above.
+     *
+     * Most posts score 0 until they have a few months of history, so ties
+     * are common: date DESC breaks them, putting the newest first.
      *
      * @return int[]
      */
-    private static function query_top_viewed_post_ids_for_term(int $term_id, string $lang, int $limit): array {
+    private static function query_top_ranked_post_ids_for_term(int $term_id, string $lang, int $limit): array {
         $args = [
             'post_type'           => 'post',
             'post_status'         => 'publish',
             'tag__in'             => [$term_id],
-            'meta_key'            => 'views',
-            'orderby'             => 'meta_value_num',
-            'order'               => 'DESC',
+            'meta_key'            => self::RANK_META_KEY,
+            'orderby'             => ['meta_value_num' => 'DESC', 'date' => 'DESC'],
             'posts_per_page'      => $limit,
             'fields'              => 'ids',
             'ignore_sticky_posts' => true,
@@ -296,14 +315,14 @@ class MV_Geo_Data_Builder {
 
     private static function build_place_node_generic(string $type, string $label, int $term_id, array $post_ids, string $lang, ?string $map_shape_id, ?string $parent = null): array {
         $url       = get_term_link($term_id, 'post_tag');
-        $top_views = self::query_top_viewed_post_ids_for_term($term_id, $lang, self::TOP_POSTS_LIMIT);
+        $top_views = self::query_top_ranked_post_ids_for_term($term_id, $lang, self::TOP_POSTS_LIMIT);
 
-        // query_top_viewed_post_ids_for_term() joins on the `views` postmeta,
-        // so posts with no view data yet (e.g. everything in a brand-new
-        // country before mavo-stats has run) are absent from it entirely —
+        // query_top_ranked_post_ids_for_term() joins on the RANK_META_KEY
+        // postmeta, so posts without it (e.g. if recent-post-popularity isn't
+        // active, or before its first run) are absent from it entirely —
         // which left the panel's article list empty even though post_count > 0
         // marked the country green. Top up from $post_ids (all posts for the
-        // term, date DESC) so the newest posts still show, view-ranked ones
+        // term, date DESC) so the newest posts still show, ranked ones
         // first, until we hit the limit.
         if (count($top_views) < self::TOP_POSTS_LIMIT) {
             $needed    = self::TOP_POSTS_LIMIT - count($top_views);
@@ -415,19 +434,23 @@ class MV_Geo_Data_Builder {
     /**
      * Used only for the ad-hoc fallback bucket's candidate posts (Step 2),
      * which come from a plain PHP array, not a WP_Query — the fast-path
-     * country/region query already sorts by views at the DB level via
-     * query_post_ids_for_term(). Posts without a `views` value yet sort
+     * country/region query already sorts by RANK_META_KEY at the DB level
+     * via query_top_ranked_post_ids_for_term(). Posts without the key sort
      * last (treated as 0), same as the DB query's NULL-sorts-last behaviour.
+     *
+     * Ties (common: many posts score 0) go to the higher post ID — a cheap
+     * stand-in for the DB query's date DESC tie-break. Explicit rather than
+     * relying on usort stability, which PHP 7.4 (still allowed) lacks.
      *
      * @param int[] $post_ids
      * @return int[]
      */
-    private static function sort_post_ids_by_views(array $post_ids): array {
-        $views = [];
+    private static function sort_post_ids_by_rank(array $post_ids): array {
+        $rank = [];
         foreach ($post_ids as $post_id) {
-            $views[$post_id] = (int) get_post_meta($post_id, 'views', true);
+            $rank[$post_id] = (int) get_post_meta($post_id, self::RANK_META_KEY, true);
         }
-        usort($post_ids, static fn ($a, $b) => $views[$b] - $views[$a]);
+        usort($post_ids, static fn ($a, $b) => [$rank[$b], $b] <=> [$rank[$a], $a]);
         return $post_ids;
     }
 
